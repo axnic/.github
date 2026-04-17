@@ -10,8 +10,6 @@
 
 <h4>Open-source projects I actually care about — side projects built in public, maintained with intention.</h4>
 
-<br/>
-
 <h5><strong>Welcome, visitor.</strong> This space is dedicated to the projects I <strong>care enough to maintain seriously</strong>, leaving the <strong>quick prototypes</strong> elsewhere.</h5>
 
 </div>
