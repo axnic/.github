@@ -59,3 +59,23 @@ Thumbs.db
 # =============================================================================
 .mise/*
 !.mise/locks/
+
+# =============================================================================
+# Terraform
+# =============================================================================
+# Local state and provider cache — never commit
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Variable files that may contain secrets — use HCP Terraform sensitive variables
+*.tfvars
+*.tfvars.json
+
+# Crash logs and local overrides
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

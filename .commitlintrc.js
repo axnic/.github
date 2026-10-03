@@ -71,6 +71,7 @@ const types = [
  * Allowed commit scopes, matching the project's top-level code areas.
  *
  * workflows  — Shared GitHub Actions workflows (.github/workflows/)
+ * terraform  — Terraform configuration and caller templates (terraform/, .github/workflows/templates/)
  * profile    — Org profile page (README.md, generated)
  * docs       — Documentation (AGENTS.md, *.md at root)
  * deps       — Dependency updates (actions, npm dev-deps)
@@ -82,6 +83,10 @@ const scopes = [
   {
     name: "workflows  - Shared GitHub Actions workflows (.github/workflows/)",
     value: "workflows",
+  },
+  {
+    name: "terraform  - Terraform configuration and caller templates (terraform/, .github/workflows/templates/)",
+    value: "terraform",
   },
   {
     name: "profile    - Org profile page (README.md, generated)",
