@@ -1,0 +1,17 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: ${vars.cron}
+  workflow_dispatch: {}
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: mise run ci:nightly

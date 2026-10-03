@@ -10,7 +10,7 @@
 # Requires the mise task: ci:commitlint (ci:lint is optional and not defined here).
 #
 # Hand-written on purpose: the other repositories get this file from Terraform
-# (axnic/.github-private, modules/workflows); this one cannot depend on its own callers.
+# (axnic/.github, terraform/modules/workflows); this one cannot depend on its own callers.
 # Reusable workflow: .github/workflows/core.qa.yaml
 # =============================================================================
 

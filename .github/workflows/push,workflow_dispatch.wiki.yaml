@@ -9,7 +9,7 @@
 # Requires the wiki to be enabled and initialized (one page created by hand, once).
 #
 # Hand-written on purpose: the other repositories get this file from Terraform
-# (axnic/.github-private, modules/workflows); this one cannot depend on its own callers.
+# (axnic/.github, terraform/modules/workflows); this one cannot depend on its own callers.
 # Reusable workflow: .github/workflows/wiki.publish.yaml
 # =============================================================================
 

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Stale Issues — Mark and close inactive issues
+# =============================================================================
+# Labels issues without activity as stale, then closes them if nothing happens.
+# Only generated on repositories whose issues are enabled.
+#
+# Jobs:
+#   stale — mark and close inactive issues, from issues.stale
+#
+# MANAGED BY TERRAFORM (axnic/.github, terraform/modules/workflows) — do not edit by hand.
+# Reusable workflow: https://github.com/axnic/.github/blob/main/.github/workflows/issues.stale.yaml
+# =============================================================================
+
+name: Stale Issues
+
+on:
+  schedule:
+    - cron: ${settings.stale_cron}
+  workflow_dispatch: {}
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # stale — mark and close inactive issues, from issues.stale
+  # ---------------------------------------------------------------------------
+  stale:
+    name: 🗓️ Stale Issues
+    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
+    uses: axnic/.github/.github/workflows/issues.stale.yaml@main
+    secrets: inherit
+    permissions:
+      issues: write
+%{ if settings.stale_days != null || settings.stale_close_days != null ~}
+    with:
+%{ if settings.stale_close_days != null ~}
+      days-before-close: ${jsonencode(settings.stale_close_days)}
+%{ endif ~}
+%{ if settings.stale_days != null ~}
+      days-before-stale: ${jsonencode(settings.stale_days)}
+%{ endif ~}
+%{ endif ~}

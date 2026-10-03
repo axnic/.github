@@ -1,0 +1,61 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/axnic/.github/refs/heads/main/assets/banner.dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/axnic/.github/refs/heads/main/assets/banner.light.png">
+  <img src="https://raw.githubusercontent.com/axnic/.github/refs/heads/main/assets/banner.light.png" alt="Banner">
+</picture>
+
+<br/>
+
+<h4>Open-source projects I actually care about — side projects built in public, maintained with intention.</h4>
+
+<h5><strong>Welcome, visitor.</strong> This space is dedicated to the projects I <strong>care enough to maintain seriously</strong>, leaving the <strong>quick prototypes</strong> elsewhere.</h5>
+
+</div>
+
+<br/><br/>
+
+%{ if length(pi_extensions) > 0 ~}
+## π｜Pi-agent Extensions
+
+Standalone modules that extend pi-agent's capabilities — each ships as an independent, installable package.
+
+%{ for p in pi_extensions ~}
+- [${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }\
+    ${join(" ", slice(p.badges, 0, ceil(length(p.badges) / 2)))}\
+    ${join(" ", slice(p.badges, ceil(length(p.badges) / 2), length(p.badges)))}
+
+%{ endfor ~}
+
+%{ endif ~}
+
+%{ if length(pulumi) > 0 ~}
+## Pulumi Providers
+
+Pulumi providers for self-hosted services.
+
+%{ for p in pulumi ~}
+- [${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }\
+    ${join(" ", slice(p.badges, 0, ceil(length(p.badges) / 2)))}\
+    ${join(" ", slice(p.badges, ceil(length(p.badges) / 2), length(p.badges)))}
+
+%{ endfor ~}
+
+%{ endif ~}
+
+%{ if length(others) > 0 ~}
+## Other Projects
+
+Everything else.
+
+%{ for p in others ~}
+- [${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }\
+    ${join(" ", slice(p.badges, 0, ceil(length(p.badges) / 2)))}\
+    ${join(" ", slice(p.badges, ceil(length(p.badges) / 2), length(p.badges)))}
+
+%{ endfor ~}
+
+%{ endif ~}
+
+<div align="center"><sub><sub>Generated ${generated_at}</sub></sub></div>

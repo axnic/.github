@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# E2E Sync — Keep one E2E caller per upstream version
+# =============================================================================
+# Lists the versions to test (mise run ci:e2e:versions) and opens a pull request that
+# adds or removes the merge_group,pull_request,push.e2e-<version>.yaml callers (each runs
+# mise run ci:e2e) and their README badges. Those callers are NOT managed by Terraform.
+# Requires the mise task: ci:e2e:versions.
+#
+# Jobs:
+#   sync — add/remove the per-version E2E callers in a pull request, from e2e.sync
+#
+# MANAGED BY TERRAFORM (axnic/.github, terraform/modules/workflows) — do not edit by hand.
+# Reusable workflow: https://github.com/axnic/.github/blob/main/.github/workflows/e2e.sync.yaml
+# =============================================================================
+
+name: E2E Sync
+
+on:
+  schedule:
+    - cron: ${settings.e2e_sync_cron}
+  workflow_dispatch: {}
+
+concurrency:
+  group: e2e-sync
+  cancel-in-progress: false
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # sync — add/remove the per-version E2E callers in a pull request, from e2e.sync
+  # ---------------------------------------------------------------------------
+  sync:
+    name: 🔄 Sync E2E callers
+    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
+    uses: axnic/.github/.github/workflows/e2e.sync.yaml@main
+    secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: write
+%{ if settings.e2e_readme_path != null || settings.e2e_commit_subject != null ~}
+    with:
+%{ if settings.e2e_commit_subject != null ~}
+      commit-subject: ${jsonencode(settings.e2e_commit_subject)}
+%{ endif ~}
+%{ if settings.e2e_readme_path != null ~}
+      readme-path: ${jsonencode(settings.e2e_readme_path)}
+%{ endif ~}
+%{ endif ~}
