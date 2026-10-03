@@ -20,6 +20,7 @@
 #   ci:commitlint                     — commitlint on a range (args: --from/--to/--last)
 #   ci:workflows                      — check workflow file naming convention
 #   ci:workflows:test                 — self-test of the naming checker
+#   ci:scripts                        — tests of the release tooling (scripts/*.test.mjs)
 # =============================================================================
 
 # =============================================================================
@@ -112,3 +113,12 @@ run = "node scripts/check-workflow-names.mjs"
 [tasks."ci:workflows:test"]
 description = "Self-test of the workflow naming checker"
 run = "node scripts/check-workflow-names.mjs --self-test"
+
+# -----------------------------------------------------------------------------
+# Release tooling — scripts/release-version.mjs and scripts/generate-release-notes.mjs, used by
+# release.prepare.yaml (Node's built-in test runner, no dependency).
+# -----------------------------------------------------------------------------
+
+[tasks."ci:scripts"]
+description = "Run the tests of the release tooling in scripts/"
+run = 'node --test "scripts/*.test.mjs"'

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Codegen Check — warn fork PRs that hand-edit the generated SDKs
+# =============================================================================
+# Reusable workflow for Pulumi provider repositories, called on pull_request_target (opened).
+# The language SDKs under sdk/ are generated from the provider schema
+# (provider/cmd/<binary>/schema.json) by `make codegen`; a contributor who edits sdk/ by hand
+# would see the change overwritten by the next codegen.
+#
+#   warn — when a pull request from a fork changes files under sdk/ but no schema.json, posts one
+#          comment asking the author to change the provider code and regenerate instead.
+#          Same-repository pull requests (maintainers, Dependabot) get no comment
+#
+# pull_request_target runs with a write token in the base repository: nothing of the pull
+# request is checked out or executed. The changed file names come from the GitHub API, and the
+# comment text is fixed.
+#
+# Inputs:      none
+# Secrets:     none (uses GITHUB_TOKEN)
+# Permissions: the caller must grant `contents: read`, `pull-requests: write`
+#
+# Example call (pull_request_target.codegen.yaml):
+#
+#   name: Codegen Check
+#   on:
+#     pull_request_target:
+#       branches: [main]
+#       types: [opened]
+#   permissions: {}
+#   jobs:
+#     codegen:
+#       permissions:
+#         contents: read
+#         pull-requests: write
+#       uses: axnic/.github/.github/workflows/pulumi.codegen.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: Codegen Check
+
+on:
+  workflow_call: {}
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # warn — comment on fork PRs that edit sdk/ without a schema change
+  # ---------------------------------------------------------------------------
+  warn:
+    name: 🧬 Generated SDKs
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # posts the comment
+
+    steps:
+      - name: 💬 Warn about hand-edited SDKs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CONTRIBUTING_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/CONTRIBUTING.md#building-and-generating-the-sdks
+        run: |
+          FILES=$(gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename')
+          if grep -qE '^provider/cmd/.+/schema\.json$' <<<"$FILES"; then
+            echo "::notice::The schema changed - SDK changes are expected."
+            exit 0
+          fi
+          if ! grep -q '^sdk/' <<<"$FILES"; then
+            echo "::notice::No change under sdk/."
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/comment.md" <<EOF
+          Hello and thank you for your pull request!
+
+          It looks like you're directly modifying files in the language SDKs (\`sdk/\`), which are generated from the provider schema: hand edits are overwritten the next time the SDKs are regenerated.
+
+          Please make the change in the provider code instead, then regenerate the SDKs with \`make codegen\` (see [Building and generating the SDKs](${CONTRIBUTING_URL})).
+          EOF
+          gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"

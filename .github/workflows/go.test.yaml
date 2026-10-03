@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Quality Assurance — Go build, tests and coverage floor
+# =============================================================================
+# Reusable workflow for Go repositories. Every job calls a `ci:*` mise task of the repository,
+# so `mise run ci` locally is the same gate.
+#
+#   build — `mise run ci:build`, on Linux
+#   test  — `mise run ci:test` then `mise run ci:coverage` (coverage floor), once per OS of the
+#           `os` input; every leg runs to completion so one platform's failure does not hide the
+#           other's. ci:coverage runs after ci:test in the same job, so it may read the profile
+#           ci:test wrote
+#
+# Inputs:
+#   os  string, default '["ubuntu-latest","macos-latest"]' — JSON array of runner labels for the
+#       test job
+# Secrets:     none
+# Permissions: the caller must grant `contents: read`
+# Mise tasks:  `ci:build`, `ci:test`, `ci:coverage` (all required)
+#
+# Example call (merge_group,pull_request,push.test.yaml):
+#
+#   name: Quality Assurance
+#   on:
+#     merge_group: {}
+#     pull_request: {}
+#     push:
+#       branches: [main]
+#   permissions: {}
+#   jobs:
+#     test:
+#       permissions:
+#         contents: read
+#       uses: axnic/.github/.github/workflows/go.test.yaml@main
+#       with:
+#         os: '["ubuntu-latest","macos-latest"]'
+#       secrets: inherit
+# =============================================================================
+
+name: Quality Assurance
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: JSON array of runner labels the tests run on.
+        type: string
+        default: '["ubuntu-latest","macos-latest"]'
+
+# The caller of core.qa.yaml has the same name ("Quality Assurance"): the go-test prefix keeps the
+# two runs from cancelling each other.
+concurrency:
+  group: go-test-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # build — the repository's binaries
+  # ---------------------------------------------------------------------------
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🏗️ Build
+        run: mise run ci:build
+
+  # ---------------------------------------------------------------------------
+  # test — unit tests + minimum coverage floor, on every OS of the matrix
+  # ---------------------------------------------------------------------------
+  test:
+    name: 🧪 Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🧪 Run tests
+        run: mise run ci:test
+
+      - name: 📊 Enforce minimum coverage
+        run: mise run ci:coverage

@@ -1,0 +1,372 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Release — version, verify, tag and draft a release (stage 1 of 2)
+# =============================================================================
+# Reusable workflow, first job of every repository's Release caller (workflow_dispatch). It
+# leaves a tag and a DRAFT GitHub Release with its notes; the second job of the same caller
+# (go.publish.yaml or pulumi.publish.yaml, `needs: prepare`) builds and attaches the artifacts.
+# Both stages live in one caller on purpose: the tag is pushed with GITHUB_TOKEN, which never
+# triggers another workflow, so a tag push cannot start the publish stage. Pushing a tag by hand
+# publishes nothing: releases go through the dispatch.
+#
+# What it does (job `prepare`):
+#   1. Computes the version (scripts/release-version.mjs of axnic/.github, checked out as a second
+#      repository). Exactly one of `bump` / `version` must be set, otherwise the job fails before
+#      anything else runs:
+#        bump=patch|minor|major  from the last stable tag (vX.Y.Z without prerelease)
+#        bump=auto               from the commits since the last stable tag: a breaking change
+#                                (`+!`/`~!`/`-!`, `type!:`, `BREAKING CHANGE:` footer) gives major,
+#                                a feature (`+[...]`, `feat`) minor, anything else patch. Both
+#                                rtunk's symbol convention and Conventional Commits are read
+#        version=X.Y.Z[-pre]     exactly that version, no leading "v"; a release candidate is cut
+#                                this way (0.13.0-rc.1): there is no rc-* bump
+#   2. Runs `mise run ci` (lint, build, tests) on the commit about to be released
+#   3. Writes the release notes, unless the `notes` input overrides them:
+#        - scripts/generate-release-notes.mjs builds a deterministic draft from the commits since
+#          the previous tag (last stable tag for a stable release, last tag of any kind for a
+#          prerelease) and their pull requests;
+#        - the OpenRouter model env.OPENROUTER_MODEL writes the summary paragraph that replaces
+#          the draft's placeholder, with prompts/release-notes.md as system prompt. Only that
+#          paragraph comes from the model; the commit log and PR descriptions are data for it,
+#          and its output is never executed;
+#        - without OPENROUTER_API_KEY, or when the call or its answer is unusable, the
+#          deterministic draft is used as is: notes never block a release
+#   4. Creates and pushes the annotated tag v<version>
+#   5. Creates the DRAFT GitHub Release of that tag with the notes, marked prerelease when the
+#      version has a prerelease segment
+#
+# Inputs (exactly one of bump / version):
+#   bump     string, default '' — auto | patch | minor | major
+#   version  string, default '' — X.Y.Z or X.Y.Z-<prerelease>, no leading "v"
+#   notes    string, default '' — release notes used as is (nothing is generated)
+# Outputs:
+#   tag         v<version>
+#   version     <version> without "v"
+#   prerelease  'true' | 'false' (string; compare with == 'true')
+# Secrets:
+#   OPENROUTER_API_KEY  optional — without it the notes stay deterministic
+# Permissions: the caller must grant `contents: write` (tag, draft release) and
+#              `pull-requests: read` (pull requests behind the commits, for the notes)
+# Mise tasks:  `ci` (required)
+#
+# Example call (workflow_dispatch.release.yaml; the npm trusted publisher of pulumi repositories
+# is bound to this caller file name):
+#
+#   name: Release
+#   on:
+#     workflow_dispatch:
+#       inputs:
+#         bump:
+#           description: "auto | patch | minor | major (leave empty when version is set)"
+#           type: string
+#           default: ""
+#         version:
+#           description: "Exact version without the leading v, e.g. 0.13.0-rc.1 (leave bump empty)"
+#           type: string
+#           default: ""
+#         notes:
+#           description: Release notes override (leave blank to generate them)
+#           type: string
+#           default: ""
+#   permissions: {}
+#   jobs:
+#     prepare:
+#       permissions:
+#         contents: write
+#         pull-requests: read
+#       uses: axnic/.github/.github/workflows/release.prepare.yaml@main
+#       with:
+#         bump: ${{ inputs.bump }}
+#         version: ${{ inputs.version }}
+#         notes: ${{ inputs.notes }}
+#       secrets: inherit
+#     publish:
+#       needs: prepare
+#       permissions:
+#         contents: write
+#         id-token: write
+#         attestations: write
+#       uses: axnic/.github/.github/workflows/go.publish.yaml@main
+#       with:
+#         tag: ${{ needs.prepare.outputs.tag }}
+#         version: ${{ needs.prepare.outputs.version }}
+#         prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
+#       secrets: inherit
+# =============================================================================
+
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      bump:
+        description: "Version bump: auto, patch, minor or major (exclusive with version)."
+        type: string
+        default: ""
+      version:
+        description: Exact version without the leading v, e.g. 0.13.0 or 0.13.0-rc.1 (exclusive with bump).
+        type: string
+        default: ""
+      notes:
+        description: Release notes used as is; empty generates them.
+        type: string
+        default: ""
+    outputs:
+      tag:
+        description: The pushed tag (v<version>).
+        value: ${{ jobs.prepare.outputs.tag }}
+      version:
+        description: The released version, without the leading v.
+        value: ${{ jobs.prepare.outputs.version }}
+      prerelease:
+        description: "'true' when the version has a prerelease segment."
+        value: ${{ jobs.prepare.outputs.prerelease }}
+    secrets:
+      OPENROUTER_API_KEY:
+        description: OpenRouter API key for the notes summary. Without it the notes stay deterministic.
+        required: false
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # prepare — version, verify, notes, tag and draft release
+  # ---------------------------------------------------------------------------
+  prepare:
+    name: 🔖 Prepare release (${{ inputs.version || inputs.bump }})
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-prepare
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: read # resolves the PR behind each commit for the release notes
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    env:
+      # Cheap, fast model that follows a strict template; the task is a short summary of a few KB
+      # of commit text, so a release costs a fraction of a cent. Any OpenRouter model id.
+      OPENROUTER_MODEL: deepseek/deepseek-v4-flash
+
+    steps:
+      # Full history is needed for the tags and the release notes' commit range.
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Same ref as the callers use (@main).
+      - name: ⬇️ Checkout release tooling (axnic/.github)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axnic/.github
+          ref: main
+          path: .axnic-github
+          persist-credentials: false
+
+      # Out of the checkout, so `mise run ci` and the tag see the repository exactly as it is.
+      # CENTRAL = the release tooling, NOTES_DIR = the release notes' working files.
+      - name: 📦 Move the release tooling out of the checkout
+        run: |
+          mv .axnic-github "$RUNNER_TEMP/axnic-github"
+          mkdir -p "$RUNNER_TEMP/release"
+          {
+            echo "CENTRAL=$RUNNER_TEMP/axnic-github"
+            echo "NOTES_DIR=$RUNNER_TEMP/release"
+          } >> "$GITHUB_ENV"
+
+      # Runs on the runner's own Node, before mise: a bad bump/version combination fails first.
+      - name: 🔖 Compute version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
+        run: node "$CENTRAL/scripts/release-version.mjs"
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      # ── Verify ─────────────────────────────────────────────────────────────
+      - name: 🧪 Lint, build and test
+        run: mise run ci
+
+      # ── Release notes ──────────────────────────────────────────────────────
+      - name: 📋 Collect commit log for release notes
+        if: inputs.notes == ''
+        env:
+          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+        run: |
+          RANGE="${PREV_TAG}..HEAD"
+          [[ "$PREV_TAG" == "v0.0.0" ]] && RANGE="HEAD"
+
+          # --first-parent: one entry per merged PR. Fields are separated by ASCII unit-separator
+          # (0x1F) and records by record-separator (0x1E) to survive arbitrary commit text.
+          git -c log.showSignature=false log --first-parent \
+            --format="%H%x1f%s%x1f%b%x1f%an%x1f%ae%x1e" \
+            "$RANGE" > "$NOTES_DIR/git-commits.txt"
+
+          echo "::notice::Collected $(git -c log.showSignature=false log --first-parent --oneline "$RANGE" | wc -l | tr -d ' ') commit(s) (${RANGE})"
+
+      # Writes pr-data.json: { "<sha>": { number, url, login, title, body } | null }
+      - name: 🔗 Resolve pull requests behind the commits
+        if: inputs.notes == ''
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const dir = process.env.NOTES_DIR;
+            const raw = fs.readFileSync(`${dir}/git-commits.txt`, 'utf8');
+            const shas = raw
+              .split('\x1e')
+              .filter(r => r.trim())
+              .map(r => r.split('\x1f')[0].trim())
+              .filter(sha => sha.length === 40);
+
+            const results = {};
+            await Promise.all(shas.map(async sha => {
+              try {
+                const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  owner: context.repo.owner,
+                  repo:  context.repo.repo,
+                  commit_sha: sha,
+                });
+                const merged = data.find(p => p.merged_at);
+                results[sha] = merged
+                  ? {
+                      number: merged.number,
+                      url: merged.html_url,
+                      login: merged.user?.login ?? null,
+                      title: merged.title,
+                      body: merged.body ?? '',
+                    }
+                  : null;
+              } catch {
+                results[sha] = null;
+              }
+            }));
+
+            fs.writeFileSync(`${dir}/pr-data.json`, JSON.stringify(results));
+            core.info(`Resolved PR data for ${shas.length} commit(s).`);
+
+      - name: 📝 Generate deterministic release notes draft
+        if: inputs.notes == ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          node "$CENTRAL/scripts/generate-release-notes.mjs" \
+            --version "$VERSION" \
+            --commits-file "$NOTES_DIR/git-commits.txt" \
+            --prs-file "$NOTES_DIR/pr-data.json" \
+            --repo "$REPOSITORY" \
+            --prev-tag "$PREV_TAG" \
+            --output "$NOTES_DIR/notes-draft.md" \
+            --context-output "$NOTES_DIR/llm-context.md"
+
+      # The draft is copied to release-notes.md first and only replaced when the model returns
+      # something usable, so every failure path ends with the deterministic notes.
+      - name: 🧠 Write the summary via OpenRouter
+        if: inputs.notes == ''
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_DESCRIPTION: ${{ github.event.repository.description }}
+        run: |
+          cp "$NOTES_DIR/notes-draft.md" "$NOTES_DIR/release-notes.md"
+
+          if [[ -z "$OPENROUTER_API_KEY" ]]; then
+            echo "::notice::OPENROUTER_API_KEY is not set - using the deterministic release notes."
+            exit 0
+          fi
+
+          PROMPT="Write the summary paragraph of the release notes for ${REPOSITORY} v${VERSION} (previous tag: ${PREV_TAG}).
+
+          Repository description: ${REPOSITORY_DESCRIPTION:-(none)}
+
+          ## Commit log
+
+          $(cat "$NOTES_DIR/llm-context.md")
+
+          ## Deterministic draft (context only)
+
+          $(cat "$NOTES_DIR/notes-draft.md")"
+
+          jq -n --arg model "$OPENROUTER_MODEL" --rawfile system "$CENTRAL/prompts/release-notes.md" --arg user "$PROMPT" '{
+            model: $model,
+            temperature: 0.2,
+            max_tokens: 2000,
+            reasoning: { enabled: false },
+            messages: [
+              { role: "system", content: $system },
+              { role: "user",   content: $user }
+            ]
+          }' > "$NOTES_DIR/payload.json"
+
+          SUMMARY=""
+          for attempt in 1 2 3; do
+            if curl -sS --fail-with-body --max-time 120 \
+                 https://openrouter.ai/api/v1/chat/completions \
+                 -H "Authorization: Bearer ${OPENROUTER_API_KEY}" \
+                 -H "Content-Type: application/json" \
+                 -H "HTTP-Referer: https://github.com/${REPOSITORY}" \
+                 -H "X-Title: ${REPOSITORY} release notes" \
+                 -d @"$NOTES_DIR/payload.json" -o "$NOTES_DIR/response.json"; then
+              SUMMARY=$(jq -r '.choices[0].message.content // empty' "$NOTES_DIR/response.json")
+              [[ -n "$SUMMARY" ]] && break
+            fi
+            echo "::warning::OpenRouter attempt ${attempt}/3 failed or returned nothing."
+            [[ $attempt -lt 3 ]] && sleep 5
+          done
+
+          # A usable summary is one short paragraph: no heading, no fence, no leftover placeholder.
+          if [[ -z "$SUMMARY" ]]; then
+            echo "::warning::OpenRouter gave no usable answer - using the deterministic release notes."
+          elif [[ ${#SUMMARY} -gt 1200 ]] || grep -qE '^(#|```)|SUMMARY_PLACEHOLDER' <<<"$SUMMARY"; then
+            echo "::warning::OpenRouter answer is not a plain summary paragraph - using the deterministic release notes. Answer starts with: $(head -c 300 <<<"$SUMMARY" | tr '\n' ' ')"
+          else
+            # ENVIRON keeps backslashes in the summary literal (awk -v would interpret them).
+            SUMMARY="$SUMMARY" awk '/SUMMARY_PLACEHOLDER/ { print ENVIRON["SUMMARY"]; next } { print }' \
+              "$NOTES_DIR/notes-draft.md" > "$NOTES_DIR/release-notes.md"
+            printf '\n---\n\n<sup>Summary written by %s via [OpenRouter](https://openrouter.ai)</sup>\n' \
+              "$OPENROUTER_MODEL" >> "$NOTES_DIR/release-notes.md"
+            echo "::notice::Release notes summary written by ${OPENROUTER_MODEL}."
+          fi
+
+      - name: 📋 Use manual release notes override
+        if: inputs.notes != ''
+        env:
+          NOTES_OVERRIDE: ${{ inputs.notes }}
+        run: printf '%s\n' "$NOTES_OVERRIDE" > "$NOTES_DIR/release-notes.md"
+
+      # ── Tag ────────────────────────────────────────────────────────────────
+      - name: 🏷️ Create and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "refs/tags/$TAG"
+
+      # ── Draft release ──────────────────────────────────────────────────────
+      # A draft so the notes can be reviewed before publishing; the publish stage attaches the
+      # artifacts to it.
+      - name: 📝 Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          gh release create "$TAG" --draft --verify-tag --title "$TAG" \
+            --notes-file "$NOTES_DIR/release-notes.md" \
+            "--prerelease=$PRERELEASE"

@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Release — build, sign and attach the Go artifacts (stage 2 of 2)
+# =============================================================================
+# Reusable workflow, second job of a Go repository's Release caller (`needs: prepare`, see
+# release.prepare.yaml for the full caller). It builds the tag release.prepare pushed and attaches
+# the artifacts to the DRAFT release it created; publishing the draft stays a manual step.
+#
+# What it does (job `publish`):
+#   1. Checks out the tag and builds with goreleaser (the repository's .goreleaser.yml), without
+#      letting goreleaser publish anything (`--skip=publish`): archives, checksums, one SBOM per
+#      archive (`sboms`, syft) and a keyless cosign signature of the checksums file (`signs`,
+#      Sigstore bundle). The job fails when the configuration produces no signature or no SBOM.
+#      cosign and syft come from the repository's mise tools
+#   2. Uploads archives, checksums, signature bundle(s) and SBOMs to the draft release
+#      (`--clobber`: a re-run replaces them)
+#   3. Records a SLSA build provenance attestation for every file listed in the checksums
+#
+# Verification (replace <owner>/<repo>, <tag>, <file>). The signing identity is this central
+# workflow (the job_workflow_ref of the OIDC token), not the repository's own Release caller; the
+# repository that ran it is pinned separately:
+#
+#   cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+#     --certificate-identity-regexp '^https://github\.com/axnic/\.github/\.github/workflows/go\.publish\.yaml@refs/heads/main$' \
+#     --certificate-github-workflow-repository <owner>/<repo>
+#   sha256sum --ignore-missing -c checksums.txt            # shasum -a 256 -c on macOS
+#   gh attestation verify <file> -R <owner>/<repo> \
+#     --signer-workflow axnic/.github/.github/workflows/go.publish.yaml
+#
+# Inputs:
+#   tag         string, required — the tag pushed by release.prepare (v<version>)
+#   version     string, required — the version without "v"
+#   prerelease  boolean, default false — informational (release.prepare already flagged the
+#               draft); shown in the job name
+# Secrets:     none (uses GITHUB_TOKEN)
+# Permissions: the caller must grant `contents: write`, `id-token: write`, `attestations: write`
+# Mise tasks:  none (tools: go, cosign, syft; config: .goreleaser.yml with `sboms` and `signs`)
+#
+# Example call: see release.prepare.yaml (job `publish`, `needs: prepare`).
+# =============================================================================
+
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag pushed by release.prepare (v<version>).
+        type: string
+        required: true
+      version:
+        description: Version without the leading v.
+        type: string
+        required: true
+      prerelease:
+        description: Whether the version is a prerelease (informational).
+        type: boolean
+        default: false
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # publish — goreleaser build, cosign signature, SBOMs, provenance
+  # ---------------------------------------------------------------------------
+  publish:
+    name: 🚀 Publish ${{ inputs.tag }}${{ inputs.prerelease && ' (prerelease)' || '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # uploads to the draft release
+      id-token: write # OIDC token: keyless cosign signature and build provenance
+      attestations: write # stores the build provenance attestation
+
+    steps:
+      # The tag, with full history: goreleaser reads the previous tag.
+      - name: ⬇️ Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      # The notes are already on the draft release: an empty notes file only stops goreleaser
+      # from building a changelog it would not use.
+      - name: 📄 Prepare goreleaser
+        run: ': > "$RUNNER_TEMP/notes.md"'
+
+      - name: 🏗️ Build with goreleaser
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: ~> v2
+          args: release --clean --skip=publish --release-notes=${{ runner.temp }}/notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ponytail: uploads goreleaser's Archive/Checksum/Signature/Certificate/SBOM artifacts only;
+      # extend the type list if a repository ships raw binaries or packages.
+      - name: ⬆️ Attach artifacts to the draft release
+        id: assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          FILES=$(jq -r '.[] | select(.type | IN("Archive","Checksum","Signature","Certificate","SBOM")) | .path' dist/artifacts.json)
+          CHECKSUMS=$(jq -r 'first(.[] | select(.type == "Checksum") | .path) // empty' dist/artifacts.json)
+          for type in Checksum Signature SBOM; do
+            if ! jq -e --arg t "$type" 'any(.[]; .type == $t)' dist/artifacts.json >/dev/null; then
+              echo "::error::.goreleaser.yml produced no $type artifact (checksum, cosign signs and syft sboms are required)."
+              exit 1
+            fi
+          done
+          mapfile -t files <<<"$FILES"
+          gh release upload "$TAG" "${files[@]}" --clobber
+          echo "checksums=$CHECKSUMS" >> "$GITHUB_OUTPUT"
+
+      # The checksums file lists every archive, so attesting its entries covers them all.
+      - name: 🛡️ Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: ${{ steps.assets.outputs.checksums }}
