@@ -17,9 +17,19 @@ name: Repository Checks
 
 on:
   merge_group: {}
-  pull_request: {}
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - scripts/**
+      - .mise.toml
+      - mise.lock
   push:
     branches: [main]
+    paths:
+      - .github/workflows/**
+      - scripts/**
+      - .mise.toml
+      - mise.lock
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
