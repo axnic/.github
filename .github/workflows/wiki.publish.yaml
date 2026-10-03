@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Wiki — publish a docs directory to the GitHub Wiki
+# =============================================================================
+# Reusable workflow: mirrors the repository's docs directory as-is to the wiki repo. The caller
+# decides when it runs (typically push to main on the docs paths, plus workflow_dispatch) and
+# should serialize runs with a `concurrency` group (cancel-in-progress: false).
+#
+#   publish — mirror the docs directory to the wiki
+#
+# One-time setup: the wiki must be enabled and initialized (one page created by hand).
+#
+# Inputs:
+#   docs-dir  string, default 'docs' — directory mirrored to the wiki
+# Secrets:     none
+# Permissions: the caller must grant `contents: write`
+#
+# Example call (push,workflow_dispatch.wiki.yaml):
+#
+#   name: Wiki
+#   on:
+#     push:
+#       branches: [main]
+#       paths:
+#         - docs/**
+#     workflow_dispatch: {}
+#   concurrency:
+#     group: wiki
+#     cancel-in-progress: false
+#   permissions: {}
+#   jobs:
+#     wiki:
+#       permissions:
+#         contents: write
+#       uses: axnic/.github/.github/workflows/wiki.publish.yaml@main
+#       with:
+#         docs-dir: docs
+#       secrets: inherit
+# =============================================================================
+
+name: Wiki
+
+on:
+  workflow_call:
+    inputs:
+      docs-dir:
+        description: "Directory mirrored to the wiki."
+        type: string
+        default: docs
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # publish — mirror the docs directory to the wiki
+  # ---------------------------------------------------------------------------
+  publish:
+    name: 📚 Publish wiki
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 📤 Publish docs to the wiki
+        uses: Andrew-Chen-Wang/github-wiki-action@1bbb4280446f9630e8e21a18012cbacf3b0f992e # v5.0.6
+        with:
+          path: ${{ inputs.docs-dir }}
+          disable-empty-commits: true
