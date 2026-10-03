@@ -51,3 +51,8 @@ Thumbs.db
 .rtunk/tmp
 .rtunk/user.yaml
 .rtunk/user_trunk.yaml
+
+# =============================================================================
+# mise (local state, generated lock directories)
+# =============================================================================
+.mise/
