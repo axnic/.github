@@ -1,57 +1,34 @@
-# axnic/.github - central CI
+# axnic
 
-This repository hosts the **reusable GitHub Actions workflows** shared by the repositories of the
-axnic organisation, and this wiki, which documents them. The wiki is generated from the `docs/`
-directory of the repository by [wiki.publish](wiki.publish.md): do not edit it in the GitHub UI.
+Everything public about the projects of the [axnic](https://github.com/axnic) organisation lives
+in this repository: the shared tooling, the conventions, the agent skills and the infrastructure
+behind them. This wiki is generated from the `docs/` directory by [wiki.publish](wiki.publish.md):
+do not edit it in the GitHub UI, open a pull request instead.
 
-## How it fits together
+For the list of projects, see the [organisation profile](https://github.com/axnic).
 
-| Where                        | What                                                                                                                                                                                                      |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `axnic/.github` (this repo)  | The reusable workflows (`on: workflow_call` only, no business trigger), the E2E caller template, the release scripts and prompt, and this documentation.                                                  |
-| `axnic/.github-private`      | Terraform (HCP Terraform workspace `Github`). Its `workflows` module **generates the caller workflow** of each repository, per group, and checks that the mise tasks the groups require exist.             |
-| Each application repository  | Its own `ci:*` mise tasks (see [Mise-Tasks](Mise-Tasks.md)) and its `.rtunk/` configuration. It holds no hand-written workflow for what a group already covers.                                          |
+## What you will find here
 
-A caller is a short workflow file written to the repository's default branch by Terraform. It
-declares the triggers, grants the permissions, and calls one central workflow:
+| Section                           | What it covers                                                                          |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| [Central CI](Central-CI.md)       | The reusable workflows shared by every repository, and how their callers are generated. |
+| [Skills](Skills.md)               | The agent skills (`skills/`) used across the projects, and how to use them.             |
+| [Conventions](Conventions.md)     | File naming, workflow house style, security rules and commit conventions.               |
+| [Releases](Releases.md)           | The two-stage release process, recovery and verification of the artifacts.              |
+| [Mise-Tasks](Mise-Tasks.md)       | The mise tasks a repository must define for the central workflows.                      |
+| [Adding-A-Repo](Adding-A-Repo.md) | Enabling the groups of workflows for a new repository.                                  |
 
-```yaml
-jobs:
-  qa:
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/core.qa.yaml@main
-    secrets: inherit
-    permissions:
-      contents: read
-```
+## Repository layout
 
-Callers must not be edited by hand: the next Terraform apply overwrites them. To change what a
-repository runs, change its Terraform configuration ([Adding-A-Repo](Adding-A-Repo.md)). The same
-repository also contains hand-written callers for its own CI (see [Conventions](Conventions.md)).
+| Path                 | Content                                                                     |
+| -------------------- | --------------------------------------------------------------------------- |
+| `.github/workflows/` | Reusable workflows (`workflow_call` only) and this repository's own callers |
+| `skills/`            | Agent skills, one directory per skill                                       |
+| `docs/`              | This wiki                                                                   |
+| `scripts/`           | Release and E2E tooling used by the workflows                               |
+| `README.md`          | The public organisation profile (generated, do not edit by hand)            |
 
-## Pages
+## Contributing
 
-General:
-
-- [Conventions](Conventions.md): file naming, house style, why callers follow `@main`, security rules,
-  commit conventions.
-- [Mise-Tasks](Mise-Tasks.md): the mise tasks a repository must define, and which workflow needs which.
-- [Releases](Releases.md): the two-stage release, recovery, verification of the artifacts.
-- [Adding-A-Repo](Adding-A-Repo.md): enabling groups for a repository in Terraform, and the manual prerequisites.
-
-Workflows, by group:
-
-| Group      | Workflows                                                                                                                              |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `core`     | [core.qa](core.qa.md), [core.review](core.review.md), [core.scan](core.scan.md), [core.deps](core.deps.md)                             |
-| `issues`   | [issues.stale](issues.stale.md) (opt-in)                                                                                               |
-| `go`       | [go.test](go.test.md), [go.publish](go.publish.md)                                                                                     |
-| `release`  | [release.prepare](release.prepare.md)                                                                                                  |
-| `pulumi`   | [pulumi.publish](pulumi.publish.md), [pulumi.codegen](pulumi.codegen.md) (the `pulumi` group includes `go`)                            |
-| `security` | [security.audit](security.audit.md)                                                                                                    |
-| `oss`      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) (opt-in, public repositories)                                         |
-| `e2e`      | [e2e.run](e2e.run.md), [e2e.sync](e2e.sync.md)                                                                                         |
-| `wiki`     | [wiki.publish](wiki.publish.md)                                                                                                        |
-
-Each page documents what the workflow file declares today (inputs, secrets, permissions): the
-banner at the top of every workflow file is the reference if a page ever lags behind.
+Commits follow [Conventional Commits](Conventions.md#commit-conventions) with a mandatory scope.
+Setup and commands are described in `AGENTS.md` at the root of the repository.

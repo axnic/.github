@@ -71,10 +71,11 @@ const types = [
  * Allowed commit scopes, matching the project's top-level code areas.
  *
  * workflows  — Shared GitHub Actions workflows (.github/workflows/)
- * profile    — Org profile page (profile/README.md)
+ * profile    — Org profile page (README.md, generated)
  * docs       — Documentation (AGENTS.md, *.md at root)
  * deps       — Dependency updates (actions, npm dev-deps)
  * templates  — Workflow/file templates (.github/templates/)
+ * skills     — Agent skills (skills/)
  * tooling    — Dev tooling (mise, rtunk, commitlint, editorconfig, …)
  */
 const scopes = [
@@ -83,12 +84,16 @@ const scopes = [
     value: "workflows",
   },
   {
-    name: "profile    - Org profile page (profile/README.md)",
+    name: "profile    - Org profile page (README.md, generated)",
     value: "profile",
   },
   {
     name: "docs       - Documentation",
     value: "docs",
+  },
+  {
+    name: "skills     - Agent skills (skills/)",
+    value: "skills",
   },
   {
     name: "deps       - Dependency updates (actions, npm)",
