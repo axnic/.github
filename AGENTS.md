@@ -26,11 +26,13 @@ pnpm install   # installs commitlint (dev tooling only)
 Common commands (short aliases available — see `mise.toml`):
 
 ```sh
-mise run lint           # run Trunk (single source of linting)
+mise run lint           # run rtunk (single source of linting)
 mise run lint:fix       # auto-fix all lint issues
+mise run ci:workflows   # check workflow file naming (<group>.<action>.yaml / <triggers>.<action>.yaml)
+mise run ci:workflows:test   # self-test of that checker
 ```
 
-Linter configs: `.trunk/trunk.yaml` (Trunk — manages all linters), `.commitlintrc.js`
+Linter configs: `.rtunk/rtunk.yaml` (rtunk — manages all linters), `.commitlintrc.js`
 (commit messages).
 
 ---
@@ -50,7 +52,7 @@ Commit format follows **Conventional Commits with a mandatory scope**:
 type(scope): Subject
 ```
 
-The scope is **required** and must be one of: `workflows`, `profile`, `docs`, `deps`, `tooling`.
+The scope is **required** and must be one of: `workflows`, `profile`, `docs`, `deps`, `tooling`, `templates`.
 The subject uses sentence case. The `commit-msg` git hook enforces this automatically
 (via commitlint). See `.commitlintrc.js` for the full ruleset.
 
@@ -64,7 +66,8 @@ Run `mise run lint:commitlint` to validate a commit message manually.
 | `profile`   | Org profile page (`profile/README.md`)                    |
 | `docs`      | Documentation (`AGENTS.md`, `*.md` at root)               |
 | `deps`      | Dependency updates (actions, npm)                         |
-| `tooling`   | Dev tooling (mise, trunk, commitlint, editorconfig, etc.) |
+| `templates` | Workflow/file templates (`.github/templates/`)            |
+| `tooling`   | Dev tooling (mise, rtunk, commitlint, editorconfig, etc.) |
 
 ---
 

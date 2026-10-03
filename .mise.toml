@@ -10,13 +10,16 @@
 #   pnpm install    # Install commitlint (dev tooling only)
 #
 # Daily workflow:
-#   mise run lint        # Check everything with Trunk
+#   mise run lint        # Check everything with rtunk
 #   mise run lint:fix    # Fix what can be fixed
 #
 # All tasks and their short aliases:
-#   lint                       (l)    — run Trunk (check only)
-#   lint:fix                   (lf)   — run Trunk and auto-fix safe issues
+#   lint                       (l)    — run rtunk (check only)
+#   lint:fix                   (lf)   — run rtunk and auto-fix safe issues
 #   lint:commitlint            (lc)   — commitlint: validate last commit message
+#   ci:commitlint                     — commitlint on a range (args: --from/--to/--last)
+#   ci:workflows                      — check workflow file naming convention
+#   ci:workflows:test                 — self-test of the naming checker
 # =============================================================================
 
 # =============================================================================
@@ -42,7 +45,6 @@ experimental = true
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]
-TRUNK_TELEMETRY = "off"                        # Disable Trunk telemetry by default for local runs
 
 # =============================================================================
 # Tools
@@ -51,7 +53,7 @@ TRUNK_TELEMETRY = "off"                        # Disable Trunk telemetry by defa
 [tools]
 node = "lts"     # JavaScript runtime — required by commitlint
 pnpm = "10.33"   # Package manager — installs commitlint dev deps
-trunk = "latest" # Trunk CLI (code quality platform)
+"github:axnic/rtunk" = "latest" # rtunk CLI (code quality platform, Trunk-compatible)
 
 # =============================================================================
 # Prepare
@@ -65,33 +67,24 @@ auto = true
 # =============================================================================
 # Linters
 # =============================================================================
-# Trunk is the single entrypoint for all linting and formatting. It runs all
-# configured checks in one pass (see .trunk/trunk.yaml for the full list).
+# rtunk is the single entrypoint for all linting and formatting. It runs all
+# configured checks in one pass (see .rtunk/rtunk.yaml for the full list).
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Trunk — All-in-one code quality platform: linters, formatters and more, all
-# configured via .trunk/trunk.yaml. Covers YAML, JSON, Markdown, secrets
-# scanning (trufflehog), and GitHub Actions (actionlint).
-#
-# Docs: https://trunk.io/docs/cli/check
-# Config: .trunk/trunk.yaml
-# -----------------------------------------------------------------------------
-
 [tasks.lint]
-description = "Lint all files with Trunk (check only)"
+description = "Lint all files with rtunk (check only)"
 alias = "l"
-run = "trunk check --all"
+run = "rtunk check ."
 
 [tasks."lint:fix"]
-description = "Lint all files with Trunk and auto-fix safe issues"
+description = "Lint all files with rtunk and auto-fix safe issues"
 alias = "lf"
-run = "trunk check --all --fix"
+run = "rtunk check --fix ."
 
 # -----------------------------------------------------------------------------
 # commitlint — validates commit messages against the conventional commit rules
-# defined in .commitlintrc.js. Useful to run manually after amending a commit.
-# The commit-msg git hook (via Trunk actions) runs this automatically on commit.
+# defined in .commitlintrc.js. The commit-msg git hook (via rtunk actions) runs
+# this automatically on commit.
 #
 # Docs: https://commitlint.js.org/#/cli
 # Config: .commitlintrc.js
@@ -101,3 +94,20 @@ run = "trunk check --all --fix"
 description = "Validate the last commit message against conventional commit rules"
 alias = "lc"
 run = "commitlint --from HEAD~1 --to HEAD --verbose"
+
+[tasks."ci:commitlint"]
+description = "Validate commit messages in a range (usage: mise run ci:commitlint -- --from <sha> --to <sha> | --last)"
+run = "commitlint --verbose"
+
+# -----------------------------------------------------------------------------
+# Workflow naming — central files are <group>.<action>.yaml; caller files are
+# <triggers>.<action>.yaml (triggers sorted, equal to the `on:` keys).
+# -----------------------------------------------------------------------------
+
+[tasks."ci:workflows"]
+description = "Check the naming convention of files in .github/workflows/"
+run = "node scripts/check-workflow-names.mjs"
+
+[tasks."ci:workflows:test"]
+description = "Self-test of the workflow naming checker"
+run = "node scripts/check-workflow-names.mjs --self-test"

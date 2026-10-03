@@ -47,7 +47,7 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 | `profile`   | Org profile page (`profile/README.md`)                    |
 | `docs`      | Documentation (`AGENTS.md`, `*.md` at root)               |
 | `deps`      | Dependency updates (actions, npm)                         |
-| `tooling`   | Dev tooling (mise, trunk, commitlint, editorconfig, etc.) |
+| `tooling`   | Dev tooling (mise, rtunk, commitlint, editorconfig, etc.) |
 
 ## The body — WHY, not WHAT
 

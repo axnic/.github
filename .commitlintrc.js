@@ -74,7 +74,8 @@ const types = [
  * profile    — Org profile page (profile/README.md)
  * docs       — Documentation (AGENTS.md, *.md at root)
  * deps       — Dependency updates (actions, npm dev-deps)
- * tooling    — Dev tooling (mise, trunk, commitlint, editorconfig, …)
+ * templates  — Workflow/file templates (.github/templates/)
+ * tooling    — Dev tooling (mise, rtunk, commitlint, editorconfig, …)
  */
 const scopes = [
   {
@@ -94,7 +95,11 @@ const scopes = [
     value: "deps",
   },
   {
-    name: "tooling    - Dev tooling (mise, trunk, commitlint, etc.)",
+    name: "templates  - Workflow/file templates (.github/templates/)",
+    value: "templates",
+  },
+  {
+    name: "tooling    - Dev tooling (mise, rtunk, commitlint, etc.)",
     value: "tooling",
   },
 ];

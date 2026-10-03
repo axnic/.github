@@ -38,3 +38,16 @@ override.tf.json
 # =============================================================================
 .DS_Store
 Thumbs.db
+
+# =============================================================================
+# rtunk (local state, caches, logs)
+# =============================================================================
+.rtunk/out
+.rtunk/logs
+.rtunk/actions
+.rtunk/notifications
+.rtunk/tools
+.rtunk/plugins
+.rtunk/tmp
+.rtunk/user.yaml
+.rtunk/user_trunk.yaml
