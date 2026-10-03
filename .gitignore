@@ -53,6 +53,9 @@ Thumbs.db
 .rtunk/user_trunk.yaml
 
 # =============================================================================
-# mise (local state, generated lock directories)
+# mise (local state ignored; .mise/locks/ tracked)
+# .mise/locks/ holds the aube sidecars that mise.lock references and
+# `mise install --locked` needs, so only that directory is kept.
 # =============================================================================
-.mise/
+.mise/*
+!.mise/locks/
