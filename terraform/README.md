@@ -42,7 +42,7 @@ mise run tf:test       # terraform test in every module that has *.tftest.hcl
 ```
 
 Never run `terraform apply` locally against the workspace. The same checks run on pull requests in
-`merge_group,pull_request,push.terraform.yaml`.
+`merge_group,pull_request,push.qa.yaml`.
 
 ## Variables
 

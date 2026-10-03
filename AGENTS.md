@@ -60,9 +60,9 @@ SHA-pinned actions, inputs through `env:`, no inline business logic).
 
 This repository runs its own CI with hand-written callers using local references
 (`uses: ./.github/workflows/...`): `merge_group,pull_request,push.qa.yaml`,
-`merge_group,pull_request,push.checks.yaml`, `merge_group,pull_request,push.terraform.yaml` and
+`merge_group,pull_request,push.checks.yaml` and
 `push,workflow_dispatch.wiki.yaml`. Only
-`qa` runs on every change; `checks`, `terraform` and `wiki` are filtered with `paths:` so that a change to
+`qa` (which also runs the Terraform fmt, validate and module tests) runs on every change; `checks` and `wiki` are filtered with `paths:` so that a change to
 `docs/` or `skills/` does not run the tooling tests. When a new path matters to a check, add it to
 its filter. Central workflows are `workflow_call` only: they never run on their own.
 

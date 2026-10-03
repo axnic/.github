@@ -34,8 +34,7 @@ mise run tf:validate    # init without backend, validate terraform/live
 mise run tf:test        # terraform test (mocked providers, no credentials)
 ```
 
-The same three checks run on pull requests (`merge_group,pull_request,push.terraform.yaml`), and only
-when `terraform/` or the caller templates change. Never run `terraform apply` locally.
+The same three checks run on pull requests (`merge_group,pull_request,push.qa.yaml`), on every change. Never run `terraform apply` locally.
 
 To add a repository, or to enable a group of workflows for one, see [Adding-A-Repo](Adding-A-Repo.md).
 The first-time setup of the workspace and of the GitHub App is described in

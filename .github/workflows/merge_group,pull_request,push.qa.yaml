@@ -1,13 +1,15 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 #
 # =============================================================================
-# Quality Assurance — lint, rtunk and commit-message gate (self-CI)
+# Quality Assurance — lint, rtunk, commit-message gate and Terraform checks (self-CI)
 # =============================================================================
 # This repository runs its own central workflow (core.qa.yaml) on its own pull requests, so a
 # change to it is exercised before it reaches the callers of every other repository. The
 # reference is local (`./`): it runs the version of the workflow in the commit being tested,
 # not `@main`.
-# Requires the mise task: ci:commitlint (ci:lint is optional and not defined here).
+# Terraform (fmt, validate, module tests) runs locally: no backend, no secrets; HCP Terraform plans and
+# applies (VCS-driven) and is never touched here.
+# Requires the mise tasks: ci:commitlint, tf:fmt, tf:validate, tf:test (ci:lint is optional and not defined here).
 #
 # Hand-written on purpose: the other repositories get this file from Terraform
 # (axnic/.github, terraform/modules/workflows); this one cannot depend on its own callers.
@@ -36,3 +38,68 @@ jobs:
     secrets: inherit
     permissions:
       contents: read
+  # ---------------------------------------------------------------------------
+  # fmt — HCL formatting
+  # ---------------------------------------------------------------------------
+  fmt:
+    name: 🎨 Format
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🎨 Check formatting
+        run: mise run tf:fmt
+
+  # ---------------------------------------------------------------------------
+  # validate — terraform/live, providers initialised without a backend
+  # ---------------------------------------------------------------------------
+  validate:
+    name: ✅ Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: ✅ Validate Terraform
+        run: mise run tf:validate
+
+  # ---------------------------------------------------------------------------
+  # test — native terraform tests of the modules (mocked providers, no credentials)
+  # ---------------------------------------------------------------------------
+  test:
+    name: 🧪 Module tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🧪 Run terraform test
+        run: mise run tf:test
