@@ -15,7 +15,7 @@
 #               archive, then the release is PUBLISHED (no longer a draft): the SDKs below are
 #               public as soon as they are pushed, and `pulumi plugin install resource <name>
 #               <version>` downloads the provider from the published release only
-#   go-sdk    — pushes the tag sdk/go/<repository>/v<version> on the release commit, so
+#   go-sdk    — after `provider` succeeded, pushes the tag sdk/go/<repository>/v<version> on the release commit, so
 #               `go get github.com/<owner>/<repository>/sdk/go/<repository>@v<version>` resolves to
 #               a clean version (Go modules in a subdirectory need a tag prefixed with it). Fails
 #               when sdk/go/<repository> does not exist; a re-run is a no-op
@@ -28,6 +28,9 @@
 #   dotnet    — `make dotnet_sdk`, then `dotnet nuget push --skip-duplicate`. Auth: NuGet trusted
 #               publishing (OIDC through NuGet/login, needs the NUGET_USER secret = the nuget.org
 #               profile name), else NUGET_API_KEY; skipped when neither is set
+#
+# Releases go public without review: the notes (whose summary paragraph an LLM wrote from the
+# commit log and PR descriptions) are published as is.
 #
 # Each SDK job runs only when listed in `sdks`, and is its own job so a failed registry can be
 # re-run alone ("Re-run failed jobs"); every step is idempotent.
@@ -117,6 +120,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
           fetch-depth: 0
 
       - name: 🔧 Install tools via mise
@@ -170,6 +174,7 @@ jobs:
   # ---------------------------------------------------------------------------
   go-sdk:
     name: 🏷️ Go SDK tag
+    needs: provider # no Go SDK tag for a provider that failed to build
     runs-on: ubuntu-latest
     permissions:
       contents: write # pushes the tag
@@ -179,12 +184,21 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
 
+      # The token reaches git through GIT_CONFIG_* (never on the command line, never on disk),
+      # the way actions/checkout does it; its base64 form is masked.
       - name: 🏷️ Push the Go SDK tag
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
           REPOSITORY_NAME: ${{ github.event.repository.name }}
         run: |
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$AUTH"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $AUTH"
           SDK_DIR="sdk/go/${REPOSITORY_NAME}"
           SDK_TAG="${SDK_DIR}/${TAG}"
           if [[ ! -f "${SDK_DIR}/go.mod" ]]; then
@@ -222,6 +236,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
 
       - name: 🔧 Install tools via mise
         uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
@@ -287,6 +302,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
 
       - name: 🔧 Install tools via mise
         if: steps.credential.outputs.enabled == 'true'
@@ -347,6 +363,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
 
       - name: 🔧 Install tools via mise
         if: steps.credential.outputs.mode != 'none'

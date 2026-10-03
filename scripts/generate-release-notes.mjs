@@ -104,6 +104,14 @@ export function parseSubject(subject) {
   return { type: CONVENTIONAL_TYPES[c[1]] ?? "*", breaking: c[3] === "!", scope: c[2] ?? null, description: c[4] };
 }
 
+/**
+ * The subject that describes a commit: for a GitHub merge commit ("Merge pull request #N from ...")
+ * that says nothing, the first line of its body, which holds the PR title.
+ */
+export function commitTitle(subject, body = "") {
+  return /^Merge pull request #\d+ /.test(subject) && body.trim() ? body.trim().split("\n")[0].trim() : subject;
+}
+
 export function isBot(login) {
   return /\[bot\]$/i.test(login ?? "");
 }
@@ -143,9 +151,7 @@ export function generateReleaseNotes(version, commits, prBySha, opts = {}) {
 
   const changeLines = commits.map((c) => {
     const pr = prBySha.get(c.sha) ?? null;
-    // A GitHub merge commit ("Merge pull request #N from ...") says nothing: its body holds the PR
-    // title, which is used instead.
-    const title = /^Merge pull request #\d+ /.test(c.subject) && c.body ? c.body.split("\n")[0].trim() : c.subject;
+    const title = commitTitle(c.subject, c.body);
     const parsed = parseSubject(title);
     return buildChangeLine(
       parsed

@@ -36,6 +36,18 @@
 #   5. Creates the DRAFT GitHub Release of that tag with the notes, marked prerelease when the
 #      version has a prerelease segment
 #
+# Every release, release candidates included, is dispatched from the default branch; any other
+# ref fails at step 1. The scripts and the prompt come from axnic/.github `main`, not from the
+# ref the caller pinned.
+#
+# Partial failure and recovery: step 1 refuses a commit that already carries a vX.Y.Z tag, so a
+# re-run never cuts a second version on the same commit.
+#   - failure before step 4: nothing is left behind; re-run (all jobs).
+#   - step 5 or the publish stage fails: the tag (and maybe the draft release) exist. Use
+#     "Re-run failed jobs" for a failed publish job. If prepare itself failed after the push,
+#     delete the tag (`git push --delete origin vX.Y.Z`) and any draft release by hand, then
+#     dispatch again.
+#
 # Inputs (exactly one of bump / version):
 #   bump     string, default '' — auto | patch | minor | major
 #   version  string, default '' — X.Y.Z or X.Y.Z-<prerelease>, no leading "v"
@@ -154,12 +166,15 @@ jobs:
 
     steps:
       # Full history is needed for the tags and the release notes' commit range.
+      # No persisted token: `mise run ci` runs repository tooling; only the tag step gets one.
       - name: ⬇️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      # Same ref as the callers use (@main).
+      # The release tooling is always axnic/.github `main` (what the callers reference), not the
+      # ref the caller pinned: reusable workflows cannot read their own ref.
       - name: ⬇️ Checkout release tooling (axnic/.github)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -179,12 +194,15 @@ jobs:
             echo "NOTES_DIR=$RUNNER_TEMP/release"
           } >> "$GITHUB_ENV"
 
-      # Runs on the runner's own Node, before mise: a bad bump/version combination fails first.
+      # Runs on the runner's own Node, before mise: a bad bump/version combination, a ref other
+      # than the default branch, or an already released HEAD fails first (GITHUB_REF is the
+      # caller's ref).
       - name: 🔖 Compute version
         id: version
         env:
           BUMP: ${{ inputs.bump }}
           VERSION: ${{ inputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: node "$CENTRAL/scripts/release-version.mjs"
 
       - name: 🔧 Install tools via mise
@@ -349,14 +367,22 @@ jobs:
         run: printf '%s\n' "$NOTES_OVERRIDE" > "$NOTES_DIR/release-notes.md"
 
       # ── Tag ────────────────────────────────────────────────────────────────
+      # The token reaches git through GIT_CONFIG_* (never on the command line, never on disk),
+      # the way actions/checkout does it; its base64 form is masked.
       - name: 🏷️ Create and push tag
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "$TAG"
-          git push origin "refs/tags/$TAG"
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$AUTH"
+          GIT_CONFIG_COUNT=1 \
+          GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader" \
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $AUTH" \
+            git push origin "refs/tags/$TAG"
 
       # ── Draft release ──────────────────────────────────────────────────────
       # A draft so the notes can be reviewed before publishing; the publish stage attaches the
