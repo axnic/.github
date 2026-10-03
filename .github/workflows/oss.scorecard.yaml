@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# OpenSSF Scorecard — supply-chain hygiene score
+# =============================================================================
+# Reusable workflow: runs OpenSSF Scorecard on the repository, publishes the result (badge and
+# trending data) and uploads the SARIF report to the Security tab.
+#
+#   scorecard — scorecard action, then SARIF upload
+#
+# Inputs:      none
+# Secrets:     none
+# Permissions: the caller must grant `contents: read`, `security-events: write`,
+#              `id-token: write` and `actions: read`
+# Mise tasks:  none
+#
+# Example call (schedule,workflow_dispatch.scorecard.yaml):
+#
+#   name: OpenSSF Scorecard
+#   on:
+#     schedule:
+#       - cron: 0 6 * * *
+#     workflow_dispatch: {}
+#   permissions: {}
+#   jobs:
+#     scorecard:
+#       permissions:
+#         actions: read
+#         contents: read
+#         id-token: write
+#         security-events: write
+#       uses: axnic/.github/.github/workflows/oss.scorecard.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: OpenSSF Scorecard
+
+on:
+  workflow_call: {}
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # scorecard — OpenSSF supply-chain security score
+  # ---------------------------------------------------------------------------
+  scorecard:
+    name: 🏆 OpenSSF Scorecard
+    runs-on: ubuntu-latest
+    permissions:
+      # Required by scorecard to read repo metadata.
+      actions: read
+      contents: read
+      # Required to publish results to the Security tab.
+      security-events: write
+      # Required for scorecard to sign the attestation.
+      id-token: write
+
+    steps:
+      # Do not persist credentials — scorecard best practice.
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 📊 Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: scorecard.sarif
+          results_format: sarif
+          # publish_results enables the Scorecard badge and trending data.
+          publish_results: true
+
+      - name: 📤 Upload results to Security tab
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v3
+        with:
+          sarif_file: scorecard.sarif
+          category: scorecard

@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Stale Issues — warn on inactive issues, then close them
+# =============================================================================
+# Reusable workflow: labels issues without activity as stale and posts a comment asking
+# whether they are still relevant, then closes those that stay silent. Pull requests are
+# ignored. Issues with at least 2 upvotes are exempt, as are issues carrying one of the
+# `exempt-issue-labels`.
+#
+# WARNING: the former pulumi-generated stale workflows ran in dry-run mode (nothing was ever
+# labelled or closed). This workflow really labels and closes issues, so enabling the `issues`
+# group in Terraform is a conscious opt-in.
+#
+#   cleanup — stale-issue-cleanup action
+#
+# Inputs:      days-before-stale (number, default 60): days without activity before the warning
+#              days-before-close (number, default 14): days after the warning before closing
+#              exempt-issue-labels (string, default ''): comma-separated labels that exempt an
+#                issue; empty = none. Old pulumi value:
+#                kind/enhancement,kind/task,kind/epic,kind/engineering,awaiting-upstream
+#              stale-issue-label (string, default ''): label applied to stale issues; empty =
+#                the action's default (Stale). Old pulumi value: awaiting-feedback
+# Secrets:     none (uses GITHUB_TOKEN)
+# Permissions: the caller must grant `issues: write`
+# Mise tasks:  none
+#
+# Example call (schedule,workflow_dispatch.stale.yaml):
+#
+#   name: Stale Issues
+#   on:
+#     schedule:
+#       - cron: 46 4 * * *
+#     workflow_dispatch: {}
+#   permissions: {}
+#   jobs:
+#     stale:
+#       permissions:
+#         issues: write
+#       uses: axnic/.github/.github/workflows/issues.stale.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: Stale Issues
+
+on:
+  workflow_call:
+    inputs:
+      days-before-stale:
+        description: Days without activity before an issue is marked stale
+        type: number
+        default: 60
+      days-before-close:
+        description: Days after the stale warning before the issue is closed
+        type: number
+        default: 14
+      exempt-issue-labels:
+        description: Comma-separated labels exempting an issue from the cleanup (empty = none)
+        type: string
+        default: ""
+      stale-issue-label:
+        description: Label applied to stale issues (empty = the action's default, Stale)
+        type: string
+        default: ""
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # cleanup — mark inactive issues as stale, close them after the grace period
+  # ---------------------------------------------------------------------------
+  cleanup:
+    name: 🧹 Stale Issues
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: 🕸️ Mark and close stale issues
+        uses: pose/stale-issue-cleanup@d2922f61fc5669f4154408689f9bb2a981996112
+        with:
+          issue-types: issues # ignore pull requests
+          stale-issue-message: >-
+            This issue has had no activity for a while. If it is still relevant, please leave a
+            comment to let us know; otherwise it will be closed automatically.
+          # Empty messages make the action skip that category.
+          stale-pr-message: ""
+          ancient-issue-message: ""
+          ancient-pr-message: ""
+          stale-issue-label: ${{ inputs.stale-issue-label || 'Stale' }}
+          exempt-issue-labels: ${{ inputs.exempt-issue-labels }}
+          stale-pr-label: no-pr-activity # unused, pull requests are not processed
+          exempt-pr-labels: awaiting-approval # unused, pull requests are not processed
+          days-before-stale: ${{ inputs.days-before-stale }}
+          days-before-close: ${{ inputs.days-before-close }}
+          minimum-upvotes-to-exempt: 2
+          repo-token: ${{ secrets.GITHUB_TOKEN }}

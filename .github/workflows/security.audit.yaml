@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Dependency Audit — known vulnerabilities in the repository's dependencies
+# =============================================================================
+# Reusable workflow: runs the repository's own audit task, whatever the ecosystems
+# (govulncheck for Go, npm audit, pip-audit, ...). What is audited is defined by the repository
+# in its `security:audit` mise task; this workflow only installs the tools and runs it.
+#
+#   audit — `mise run security:audit`
+#
+# Inputs:      none
+# Secrets:     none
+# Permissions: the caller must grant `contents: read`
+# Mise tasks:  `security:audit` (required)
+#
+# Example call (schedule,workflow_dispatch.audit.yaml):
+#
+#   name: Dependency Audit
+#   on:
+#     schedule:
+#       - cron: 0 6 * * *
+#     workflow_dispatch: {}
+#   permissions: {}
+#   jobs:
+#     audit:
+#       permissions:
+#         contents: read
+#       uses: axnic/.github/.github/workflows/security.audit.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: Dependency Audit
+
+on:
+  workflow_call: {}
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # audit — run the repository's dependency audit
+  # ---------------------------------------------------------------------------
+  audit:
+    name: 📦 Dependency Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🔍 Audit dependencies
+        run: mise run security:audit

@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Contributor Welcome — greet pull requests coming from forks
+# =============================================================================
+# Reusable workflow: posts a comment on pull requests opened from a fork, to guide external
+# contributors. The caller triggers on `pull_request_target` (the token must be able to write
+# on fork PRs). That trigger runs with write access, so this workflow never checks out or
+# executes code from the pull request: it only posts a comment.
+#
+#   welcome — comment on the PR (skipped when the PR comes from the same repository)
+#
+# Inputs:      message (string, default ''): comment body; empty uses the built-in text
+# Secrets:     none (uses GITHUB_TOKEN)
+# Permissions: the caller must grant `pull-requests: write`
+# Mise tasks:  none
+#
+# Example call (pull_request_target.welcome.yaml):
+#
+#   name: Contributor Welcome
+#   on:
+#     pull_request_target: {}
+#   permissions: {}
+#   jobs:
+#     welcome:
+#       permissions:
+#         pull-requests: write
+#       uses: axnic/.github/.github/workflows/oss.welcome.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: Contributor Welcome
+
+on:
+  workflow_call:
+    inputs:
+      message:
+        description: Comment body; empty uses the built-in text
+        type: string
+        default: ""
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # welcome — comment on pull requests opened from a fork
+  # ---------------------------------------------------------------------------
+  welcome:
+    name: 👋 Welcome
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    permissions:
+      pull-requests: write
+
+    # No checkout on purpose: pull_request_target must never run PR code.
+    steps:
+      - name: 💬 Comment on the pull request
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          message: ${{ inputs.message || 'Thanks for your contribution! A maintainer will review your pull request as soon as possible.' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
