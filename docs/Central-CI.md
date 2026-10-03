@@ -5,11 +5,11 @@ axnic organisation. This page explains how they are wired; the pages of each wor
 
 ## How it fits together
 
-| Where                       | What                                                                                                                                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `axnic/.github` (this repo) | The reusable workflows (`on: workflow_call` only, no business trigger), the E2E caller template, the release scripts and prompt, and this documentation.                                       |
-| `axnic/.github-private`     | Terraform (HCP Terraform workspace `Github`). Its `workflows` module **generates the caller workflow** of each repository, per group, and checks that the mise tasks the groups require exist. |
-| Each application repository | Its own `ci:*` mise tasks (see [Mise-Tasks](Mise-Tasks.md)) and its `.rtunk/` configuration. It holds no hand-written workflow for what a group already covers.                                |
+| Where                            | What                                                                                                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/` (this repo) | The reusable workflows (`on: workflow_call` only, no business trigger), the E2E caller template, the release scripts and prompt, and this documentation.                                                                      |
+| `terraform/` (this repo)         | Terraform (HCP Terraform workspace `Github`, see [Terraform](Terraform.md)). Its `workflows` module **generates the caller workflow** of each repository, per group, and checks that the mise tasks the groups require exist. |
+| Each application repository      | Its own `ci:*` mise tasks (see [Mise-Tasks](Mise-Tasks.md)) and its `.rtunk/` configuration. It holds no hand-written workflow for what a group already covers.                                                               |
 
 A caller is a short workflow file written to the repository's default branch by Terraform. It
 declares the triggers, grants the permissions, and calls one central workflow:

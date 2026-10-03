@@ -7,9 +7,10 @@ instructions) and optional `references/` loaded on demand, following the
 
 ## Available skills
 
-| Skill                                                                       | What it does                                                                                                                    |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| [commit](https://github.com/axnic/.github/blob/main/skills/commit/SKILL.md) | Writes commit messages: Conventional Commits with a mandatory scope, a body that explains why, DCO sign-off and signed commits. |
+| Skill                                                                                 | What it does                                                                                                                    |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [add-project](https://github.com/axnic/.github/blob/main/skills/add-project/SKILL.md) | Adds a repository to the Terraform configuration (`projects.tf`, `ci_app.tf`), step by step.                                    |
+| [commit](https://github.com/axnic/.github/blob/main/skills/commit/SKILL.md)           | Writes commit messages: Conventional Commits with a mandatory scope, a body that explains why, DCO sign-off and signed commits. |
 
 ## Using a skill
 

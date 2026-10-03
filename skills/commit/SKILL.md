@@ -41,13 +41,15 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 
 ## Scopes
 
-| Scope       | What it covers                                            |
-| ----------- | --------------------------------------------------------- |
-| `workflows` | Shared GitHub Actions workflows (`.github/workflows/`)    |
-| `profile`   | Org profile page (`profile/README.md`)                    |
-| `docs`      | Documentation (`AGENTS.md`, `*.md` at root)               |
-| `deps`      | Dependency updates (actions, npm)                         |
-| `tooling`   | Dev tooling (mise, rtunk, commitlint, editorconfig, etc.) |
+| Scope       | What it covers                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| `workflows` | Shared GitHub Actions workflows (`.github/workflows/`)                                      |
+| `terraform` | Terraform configuration and caller templates (`terraform/`, `.github/workflows/templates/`) |
+| `profile`   | Org profile page (`README.md`, generated)                                                   |
+| `docs`      | Documentation (`docs/`, `AGENTS.md`, `*.md` at root)                                        |
+| `skills`    | Agent skills (`skills/`)                                                                    |
+| `deps`      | Dependency updates (actions, npm)                                                           |
+| `tooling`   | Dev tooling (mise, rtunk, commitlint, editorconfig, etc.)                                   |
 
 ## The body — WHY, not WHAT
 

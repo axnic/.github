@@ -1,11 +1,13 @@
 **[axnic](Home.md)**
 
+- [Terraform](Terraform.md)
 - [Central CI](Central-CI.md)
 - [Skills](Skills.md)
 - [Conventions](Conventions.md)
 - [Releases](Releases.md)
 - [Mise-Tasks](Mise-Tasks.md)
 - [Adding-A-Repo](Adding-A-Repo.md)
+- [CI-GitHub-App](CI-GitHub-App.md)
 
 **Workflows**
 

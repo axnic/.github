@@ -11,6 +11,7 @@ For the list of projects, see the [organisation profile](https://github.com/axni
 
 | Section                           | What it covers                                                                          |
 | --------------------------------- | --------------------------------------------------------------------------------------- |
+| [Terraform](Terraform.md)         | How the organisation is managed as code: repositories, callers, AI review, profile.     |
 | [Central CI](Central-CI.md)       | The reusable workflows shared by every repository, and how their callers are generated. |
 | [Skills](Skills.md)               | The agent skills (`skills/`) used across the projects, and how to use them.             |
 | [Conventions](Conventions.md)     | File naming, workflow house style, security rules and commit conventions.               |
@@ -24,6 +25,7 @@ For the list of projects, see the [organisation profile](https://github.com/axni
 | -------------------- | --------------------------------------------------------------------------- |
 | `.github/workflows/` | Reusable workflows (`workflow_call` only) and this repository's own callers |
 | `skills/`            | Agent skills, one directory per skill                                       |
+| `terraform/`         | The organisation as code, applied by HCP Terraform                          |
 | `docs/`              | This wiki                                                                   |
 | `scripts/`           | Release and E2E tooling used by the workflows                               |
 | `README.md`          | The public organisation profile (generated, do not edit by hand)            |

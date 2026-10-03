@@ -182,7 +182,7 @@ run = "commitlint --verbose"
 
 ## How Terraform checks the tasks
 
-The `workflows` module of `axnic/.github-private` refuses to plan a group whose tasks are missing. It
+The `workflows` module (`terraform/modules/workflows`) refuses to plan a group whose tasks are missing. It
 reads the repository's **default branch** (not a pull request). It decodes `mise.toml`, `.mise.toml`
 and `.config/mise.toml` with a TOML provider and collects the keys of their `tasks` table, and it
 recognises file tasks in the git tree under `mise-tasks/`, `.mise-tasks/`, `mise/tasks/`,
