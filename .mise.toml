@@ -53,6 +53,7 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 [tools]
 node = "lts"     # JavaScript runtime — required by commitlint
 pnpm = "10.33"   # Package manager — installs commitlint dev deps
+"npm:@commitlint/cli" = "latest" # Commit convention check, drives .commitlintrc.js (`ci:commitlint`)
 "github:axnic/rtunk" = "latest" # rtunk CLI (code quality platform, Trunk-compatible)
 
 # =============================================================================
