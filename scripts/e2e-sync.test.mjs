@@ -59,3 +59,11 @@ test("sync: creates only missing callers, adds rows, is idempotent", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("single-row table, CRLF endings and unsorted rows", () => {
+  assert.equal(insertRows(README(["v2.3.0"]), ["v2.4.0"]), README(["v2.3.0", "v2.4.0"]));
+  const crlf = (s) => s.replaceAll("\n", "\r\n");
+  assert.equal(insertRows(crlf(README(["v2.2.0", "v2.3.0"])), ["v2.4.0"]), crlf(README(["v2.2.0", "v2.3.0", "v2.4.0"])));
+  // appended after the LAST row, wherever it sorts
+  assert.equal(insertRows(README(["v2.3.0", "v2.1.0"]), ["v2.4.0"]), README(["v2.3.0", "v2.1.0", "v2.4.0"]));
+});
