@@ -157,7 +157,7 @@ run = "terraform -chdir=terraform/live validate"
 description = "Run terraform test in every module that has *.tftest.hcl"
 alias = "tft"
 run = """
-set -euo pipefail
+set -eu
 for dir in terraform/modules/*/ terraform/modules/*/*/; do
   ls "$dir"*.tftest.hcl >/dev/null 2>&1 || continue
   echo "::group::terraform test ${dir}"
