@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Quality Assurance — lint, rtunk and commit-message gate (self-CI)
+# =============================================================================
+# This repository runs its own central workflow (core.qa.yaml) on its own pull requests, so a
+# change to it is exercised before it reaches the callers of every other repository. The
+# reference is local (`./`): it runs the version of the workflow in the commit being tested,
+# not `@main`.
+# Requires the mise task: ci:commitlint (ci:lint is optional and not defined here).
+#
+# Hand-written on purpose: the other repositories get this file from Terraform
+# (axnic/.github-private, modules/workflows); this one cannot depend on its own callers.
+# Reusable workflow: .github/workflows/core.qa.yaml
+# =============================================================================
+
+name: Quality Assurance
+
+on:
+  merge_group: {}
+  pull_request: {}
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  qa:
+    name: ✅ Checks
+    uses: ./.github/workflows/core.qa.yaml
+    secrets: inherit
+    permissions:
+      contents: read

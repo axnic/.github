@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Wiki — publish docs/ to the wiki of axnic/.github (self-CI)
+# =============================================================================
+# This repository documents its central workflows in docs/ and publishes that directory to its
+# own wiki with its own wiki.publish.yaml, referenced locally (`./`) so the run uses the version
+# in the pushed commit. Runs on pushes to main that touch docs/, and on demand.
+# Requires the wiki to be enabled and initialized (one page created by hand, once).
+#
+# Hand-written on purpose: the other repositories get this file from Terraform
+# (axnic/.github-private, modules/workflows); this one cannot depend on its own callers.
+# Reusable workflow: .github/workflows/wiki.publish.yaml
+# =============================================================================
+
+name: Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+  workflow_dispatch: {}
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  wiki:
+    name: 📚 Wiki
+    uses: ./.github/workflows/wiki.publish.yaml
+    with:
+      docs-dir: docs
+    secrets: inherit
+    permissions:
+      contents: write

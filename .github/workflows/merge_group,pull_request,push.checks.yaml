@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Repository Checks — tests of this repository's own tooling
+# =============================================================================
+# Checks what no central workflow covers because it is specific to axnic/.github:
+#
+#   workflows — `mise run ci:workflows` (file naming convention of .github/workflows/) and
+#               `mise run ci:workflows:test` (self-test of that checker)
+#   scripts   — `mise run ci:scripts` (tests of the release and E2E sync tooling in scripts/)
+#
+# Hand-written: this workflow only exists in this repository.
+# Requires the mise tasks: ci:workflows, ci:workflows:test, ci:scripts.
+# =============================================================================
+
+name: Repository Checks
+
+on:
+  merge_group: {}
+  pull_request: {}
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # workflows — naming convention of the workflow files
+  # ---------------------------------------------------------------------------
+  workflows:
+    name: 📛 Workflow names
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 📛 Check workflow file names
+        run: mise run ci:workflows
+
+      - name: 🧪 Self-test the checker
+        run: mise run ci:workflows:test
+
+  # ---------------------------------------------------------------------------
+  # scripts — tests of the tooling in scripts/
+  # ---------------------------------------------------------------------------
+  scripts:
+    name: 🧪 Tooling tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🧪 Run the tooling tests
+        run: mise run ci:scripts
