@@ -79,7 +79,5 @@ jobs:
 ## Known limitations
 
 - `subject-prefix` is not validated: an empty value gives the subject `: Bump ...`.
-- Only patch and security updates are merged. The description of this workflow in the Terraform catalog
-  says "patch and minor"; the workflow file is what runs.
 - Dependabot pull requests skip commitlint in [core.qa](core.qa.md); the subject set here is what is
   validated on `push`.
