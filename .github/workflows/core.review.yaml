@@ -165,7 +165,7 @@ jobs:
           # OpenRouter ids are unknown to PR Agent's token table, so the context size is declared
           # explicitly (default models: ~1M).
           config.model: ${{ inputs.model }}
-          config.fallback_models: '["${{ inputs.fallback-model }}"]'
+          config.fallback_models: ${{ format('[{0}]', toJSON(inputs.fallback-model)) }}
           config.custom_model_max_tokens: "1000000"
           # Never edit the pull request itself: the description goes to one persistent comment
           # instead of overwriting the body, and the title is left alone.

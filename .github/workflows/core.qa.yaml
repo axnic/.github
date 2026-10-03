@@ -73,6 +73,8 @@ jobs:
           cache: true
           cache_key: "mise-v1-{{platform}}-{{file_hash}}"
 
+      # mise must be installed (step above) to ask it whether a task exists, hence the install
+      # even for repositories without ci:lint.
       - name: 🔎 Detect the ci:lint task
         id: task
         run: |
