@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Code Scanning — CodeQL static analysis (SAST)
+# =============================================================================
+# Reusable workflow running GitHub's SAST engine with the security-and-quality query suite, one
+# matrix leg per language. Findings are surfaced in the repository's Security tab.
+#
+# Callers should run it on every pull request and push to main, and on a daily schedule: a
+# finding is reported on the change that introduces it, OpenSSF Scorecard's SAST check is
+# satisfied, and the schedule catches findings from query updates on unchanged code.
+#
+# Skipped for Dependabot and for pull requests from forks: their token cannot write the
+# code-scanning results (security-events: write).
+#
+# Inputs:
+#   languages  string, default '["go"]' — JSON array of CodeQL languages
+# Secrets:     none
+# Permissions: the caller must grant `contents: read`, `security-events: write`, `actions: read`
+#
+# Example call (pull_request,push,schedule.scan.yaml):
+#
+#   name: Code Scanning
+#   on:
+#     pull_request: {}
+#     push:
+#       branches: [main]
+#     schedule:
+#       - cron: 0 6 * * *
+#   permissions: {}
+#   jobs:
+#     scan:
+#       permissions:
+#         actions: read
+#         contents: read
+#         security-events: write
+#       uses: axnic/.github/.github/workflows/core.scan.yaml@main
+#       with:
+#         languages: '["go"]'
+#       secrets: inherit
+# =============================================================================
+
+name: Code Scanning
+
+on:
+  workflow_call:
+    inputs:
+      languages:
+        description: JSON array of CodeQL languages to analyze.
+        type: string
+        default: '["go"]'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # codeql — analyze each language
+  # ---------------------------------------------------------------------------
+  codeql:
+    name: 🧬 CodeQL (${{ matrix.language }})
+    if: >-
+      github.event_name != 'pull_request' || (
+        github.actor != 'dependabot[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(inputs.languages) }}
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔧 Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: 🏗️ Autobuild
+        uses: github/codeql-action/autobuild@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v3
+
+      - name: 🔍 Run CodeQL analysis
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v3
+        with:
+          category: /language:${{ matrix.language }}

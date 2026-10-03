@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# Quality Assurance — lint, rtunk and commit-message gate
+# =============================================================================
+# Reusable workflow: validates every pull request (and merge-queue entry) before it lands on
+# main, and every push to main (main only accepts merged PRs, so a push is the merge commit).
+# The mode is derived from the caller's event (github.event_name); there is no input.
+#
+#   ci-lint     — repository-specific linters through `mise run ci:lint`; skipped when the
+#                 repository does not define that task
+#   rtunk       — rtunk's lint stack (.rtunk/rtunk.yaml) through the axnic/rtunk action:
+#                 changed files since the base on pull_request/merge_group, every file on push.
+#                 Findings become annotations
+#   commitlint  — commit convention on every commit of the PR (`mise run ci:commitlint`).
+#                 Skipped for Dependabot PRs: its own commit messages never follow the
+#                 convention; core.deps.yaml sets a compliant subject on the merge commit, and
+#                 on push only that merge commit (--last) is validated
+#
+# Inputs:      none
+# Secrets:     none
+# Permissions: the caller must grant `contents: read`
+# Mise tasks:  `ci:commitlint` (required), `ci:lint` (optional)
+#
+# Example call (merge_group,pull_request,push.qa.yaml):
+#
+#   name: Quality Assurance
+#   on:
+#     merge_group: {}
+#     pull_request: {}
+#     push:
+#       branches: [main]
+#   permissions: {}
+#   jobs:
+#     qa:
+#       permissions:
+#         contents: read
+#       uses: axnic/.github/.github/workflows/core.qa.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: Quality Assurance
+
+on:
+  workflow_call: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # ci-lint — repository-specific linters, only if the repository defines them
+  # ---------------------------------------------------------------------------
+  ci-lint:
+    name: 🔍 Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Restores/saves the mise cache under one key shared by every job; the key hashes the mise
+      # config files, including mise.lock, so it changes only when a tool version changes.
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: 🔎 Detect the ci:lint task
+        id: task
+        run: |
+          if mise tasks info ci:lint >/dev/null 2>&1; then
+            echo "defined=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "defined=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No ci:lint mise task in this repository - skipping."
+          fi
+
+      - name: 🔍 Run repository linters
+        if: steps.task.outputs.defined == 'true'
+        run: mise run ci:lint
+
+  # ---------------------------------------------------------------------------
+  # rtunk — rtunk checks the repository through its GitHub Action
+  # ---------------------------------------------------------------------------
+  rtunk:
+    name: 🧹 rtunk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # Full history is needed by check-mode: changed-since-base.
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: 🧹 Run rtunk check
+        uses: axnic/rtunk@main
+        with:
+          check-mode: ${{ github.event_name == 'push' && 'all' || 'changed-since-base' }}
+
+  # ---------------------------------------------------------------------------
+  # commitlint — every commit must follow the repository's commit convention
+  # ---------------------------------------------------------------------------
+  commitlint:
+    name: ✉️ Commit Messages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # Full history is needed to compare base..head SHA range.
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      - name: ✅ Validate commit messages
+        if: github.event_name != 'push' && github.actor != 'dependabot[bot]'
+        run: |
+          mise run ci:commitlint -- \
+            --from ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }} \
+            --to   ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+
+      - name: ✅ Validate commit messages (push to main)
+        if: github.event_name == 'push'
+        run: mise run ci:commitlint -- --last
