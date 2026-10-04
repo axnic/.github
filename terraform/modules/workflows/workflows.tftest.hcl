@@ -534,3 +534,41 @@ run "guard_not_deferred_by_ready_after" {
 
   expect_failures = [data.github_tree.default_branch]
 }
+
+# OSV-Scanner caller (security group): weekly cron by default, overridable and validated.
+run "osv_caller" {
+  command = plan
+
+  variables {
+    workflow_groups = ["security"]
+    settings        = { osv_cron = "15 4 * * 2" }
+  }
+
+  assert {
+    condition     = contains(output.files, "pull_request,push,schedule.osv.yaml") && strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "cron: 15 4 * * 2") && strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "security.osv.yaml@main")
+    error_message = "the OSV caller must use osv_cron and call security.osv: ${jsonencode(output.files)}"
+  }
+}
+
+run "osv_default_cron" {
+  command = plan
+
+  variables {
+    workflow_groups = ["security"]
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "cron: 30 5 * * 1")
+    error_message = "the OSV caller must default to Monday 05:30 UTC"
+  }
+}
+
+run "invalid_osv_cron" {
+  command = plan
+
+  variables {
+    settings = { osv_cron = "30 5 * *" }
+  }
+
+  expect_failures = [var.settings]
+}

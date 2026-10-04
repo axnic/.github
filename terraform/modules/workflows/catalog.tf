@@ -72,6 +72,12 @@ locals {
       triggers = ["schedule", "workflow_dispatch"]
       tasks    = ["security:audit"]
     }
+    "security.osv" = {
+      group    = "security"
+      action   = "osv"
+      triggers = ["pull_request", "push", "schedule"]
+      tasks    = []
+    }
     "oss.scorecard" = {
       group    = "oss"
       action   = "scorecard"

@@ -291,7 +291,7 @@ variable "workflow_params" {
       for k in keys(var.workflow_params) : contains([
         "go_paths", "go_os", "review_model", "review_fallback_model", "scan_cron", "scan_languages",
         "deps_subject_prefix", "deps_merge_method", "stale_cron", "stale_days", "stale_close_days",
-        "audit_cron", "scorecard_cron", "welcome_message", "pulumi_sdks", "e2e_sync_cron",
+        "audit_cron", "osv_cron", "scorecard_cron", "welcome_message", "pulumi_sdks", "e2e_sync_cron",
         "e2e_readme_path", "e2e_commit_subject", "wiki_docs_dir",
       ], k)
     ])

@@ -116,6 +116,7 @@ run "workflows_defaults" {
   assert {
     condition = output.workflow_files == tolist([
       "merge_group,pull_request,push.qa.yaml",
+      "pull_request,push,schedule.osv.yaml",
       "pull_request,push,schedule.scan.yaml",
       "pull_request,push.test.yaml",
       "pull_request.deps.yaml",

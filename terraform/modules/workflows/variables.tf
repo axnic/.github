@@ -165,6 +165,8 @@ variable "settings" {
     stale_close_days = optional(number) # input `days-before-close`
     # security.audit
     audit_cron = optional(string, "0 6 * * *")
+    # security.osv
+    osv_cron = optional(string, "30 5 * * 1") # Monday 05:30 UTC
     # oss.scorecard / oss.welcome
     scorecard_cron  = optional(string, "0 5 * * 1")
     welcome_message = optional(string) # input `message`
@@ -183,7 +185,7 @@ variable "settings" {
   # Values rendered into the YAML of the callers.
   validation {
     condition = alltrue([
-      for c in [var.settings.scan_cron, var.settings.stale_cron, var.settings.audit_cron, var.settings.scorecard_cron, var.settings.e2e_sync_cron] :
+      for c in [var.settings.scan_cron, var.settings.stale_cron, var.settings.audit_cron, var.settings.osv_cron, var.settings.scorecard_cron, var.settings.e2e_sync_cron] :
       can(regex("^[0-9A-Za-z*/,-]+( [0-9A-Za-z*/,-]+){4}$", c))
     ])
     error_message = "settings.*_cron must be 5-field cron expressions (digits, letters, '*', '/', ',', '-')."
