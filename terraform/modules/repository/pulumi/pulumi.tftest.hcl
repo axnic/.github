@@ -119,7 +119,6 @@ run "workflows_defaults" {
       "pull_request,push,schedule.osv.yaml",
       "pull_request,push,schedule.scan.yaml",
       "pull_request,push.test.yaml",
-      "pull_request.deps.yaml",
       "pull_request_target.codegen.yaml",
       "schedule,workflow_dispatch.audit.yaml",
       "workflow_dispatch.release.yaml",

@@ -278,7 +278,7 @@ variable "custom_workflows" {
 }
 
 # modules/workflows var.settings (crons, path filters, central workflow inputs:
-# scan_languages, go_os, go_paths, deps_subject_prefix, deps_merge_method,
+# scan_languages, go_os, go_paths,
 # stale_days, review_model, e2e_commit_subject, e2e_readme_path, ...). Typed and
 # validated there; the key check below catches typos, which an object
 # conversion would silently drop.
@@ -292,19 +292,12 @@ variable "workflow_params" {
     condition = alltrue([
       for k in keys(var.workflow_params) : contains([
         "go_paths", "go_os", "review_model", "review_fallback_model", "scan_cron", "scan_languages",
-        "deps_subject_prefix", "deps_merge_method", "stale_cron", "stale_days", "stale_close_days",
+        "stale_cron", "stale_days", "stale_close_days",
         "audit_cron", "osv_cron", "scorecard_cron", "welcome_message", "pulumi_sdks", "e2e_sync_cron",
         "e2e_readme_path", "e2e_commit_subject", "wiki_docs_dir",
       ], k)
     ])
     error_message = "workflow_params keys must be attributes of modules/workflows var.settings (keep this list in sync)."
-  }
-
-  # This module only allows merge commits (allow_squash_merge = false below in main.tf), so the
-  # auto-merge of core.deps (`gh pr merge --squash`) would be refused by GitHub.
-  validation {
-    condition     = try(var.workflow_params.deps_merge_method, "merge") == "merge"
-    error_message = "workflow_params.deps_merge_method must be \"merge\": repositories only allow merge commits."
   }
 }
 

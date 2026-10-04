@@ -126,7 +126,6 @@ run "workflows_default_core" {
     condition = output.workflow_files == tolist([
       "merge_group,pull_request,push.qa.yaml",
       "pull_request,push,schedule.scan.yaml",
-      "pull_request.deps.yaml",
     ])
     error_message = "base must default to the core group: ${jsonencode(output.workflow_files)}"
   }
@@ -199,7 +198,7 @@ run "invalid_workflow_params_key" {
 
   variables {
     name            = "tf-base-bad-params"
-    workflow_params = { deps_merge_methd = "squash" }
+    workflow_params = { scan_languagez = ["go"] }
   }
 
   expect_failures = [
@@ -207,19 +206,6 @@ run "invalid_workflow_params_key" {
   ]
 }
 
-# 9b) Repositories only allow merge commits: a squash auto-merge would be refused by GitHub.
-run "invalid_deps_merge_method" {
-  command = plan
-
-  variables {
-    name            = "tf-base-squash"
-    workflow_params = { deps_merge_method = "squash" }
-  }
-
-  expect_failures = [
-    var.workflow_params,
-  ]
-}
 
 # 10) The Terraform app is a bypass actor of the ruleset unless opted out.
 run "terraform_app_bypass" {

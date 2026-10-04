@@ -17,17 +17,17 @@ reference: the variables below are those of its `variables.tf` at the time of wr
 
 ## Groups
 
-| Group      | Generated callers (file names)                                                                                                                      | Default for             |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `core`     | `merge_group,pull_request,push.qa.yaml`, `issue_comment,pull_request.review.yaml`, `pull_request,push,schedule.scan.yaml`, `pull_request.deps.yaml` | all repositories        |
-| `go`       | `pull_request,push.test.yaml`                                                                                                                       | Go modules              |
-| `release`  | `workflow_dispatch.release.yaml` (`prepare` then `publish`)                                                                                         | Go, Pulumi              |
-| `pulumi`   | `pull_request_target.codegen.yaml`, and the Pulumi `publish` job of the release caller (includes `go`)                                              | Pulumi modules          |
-| `security` | `schedule,workflow_dispatch.audit.yaml`                                                                                                             | Go, Pulumi              |
-| `issues`   | `schedule,workflow_dispatch.stale.yaml`                                                                                                             | **opt-in**              |
-| `oss`      | `schedule,workflow_dispatch.scorecard.yaml`, `pull_request_target.welcome.yaml`                                                                     | **opt-in**              |
-| `e2e`      | `schedule,workflow_dispatch.e2e-sync.yaml`; the per-version callers are then created by the sync                                                    | explicit                |
-| `wiki`     | `push,workflow_dispatch.wiki.yaml`                                                                                                                  | with the `wiki` feature |
+| Group      | Generated callers (file names)                                                                                            | Default for             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `core`     | `merge_group,pull_request,push.qa.yaml`, `issue_comment,pull_request.review.yaml`, `pull_request,push,schedule.scan.yaml` | all repositories        |
+| `go`       | `pull_request,push.test.yaml`                                                                                             | Go modules              |
+| `release`  | `workflow_dispatch.release.yaml` (`prepare` then `publish`)                                                               | Go, Pulumi              |
+| `pulumi`   | `pull_request_target.codegen.yaml`, and the Pulumi `publish` job of the release caller (includes `go`)                    | Pulumi modules          |
+| `security` | `schedule,workflow_dispatch.audit.yaml`                                                                                   | Go, Pulumi              |
+| `issues`   | `schedule,workflow_dispatch.stale.yaml`                                                                                   | **opt-in**              |
+| `oss`      | `schedule,workflow_dispatch.scorecard.yaml`, `pull_request_target.welcome.yaml`                                           | **opt-in**              |
+| `e2e`      | `schedule,workflow_dispatch.e2e-sync.yaml`; the per-version callers are then created by the sync                          | explicit                |
+| `wiki`     | `push,workflow_dispatch.wiki.yaml`                                                                                        | with the `wiki` feature |
 
 The defaults per module type are the intent of the design: `go` = core + go + security + release
 (+ wiki when the feature is on), `pulumi` = core + go + security + pulumi + release, `base` = core. Check the
@@ -66,7 +66,6 @@ to the caller, since central workflows only have `workflow_call`.
 | `go_paths`, `go_os`                                      | [go.test](go.test.md): path filter, input `os`                   | `["**.go", "go.mod", "go.sum"]` |
 | `review_model`, `review_fallback_model`                  | [core.review](core.review.md)                                    | central defaults                |
 | `scan_cron`, `scan_languages`                            | [core.scan](core.scan.md)                                        | `0 6 * * *`                     |
-| `deps_subject_prefix`, `deps_merge_method`               | [core.deps](core.deps.md)                                        | `build(deps)`, `merge`          |
 | `stale_cron`, `stale_days`, `stale_close_days`           | [issues.stale](issues.stale.md)                                  | `30 1 * * *`                    |
 | `audit_cron`                                             | [security.audit](security.audit.md)                              | `0 6 * * *`                     |
 | `scorecard_cron`, `welcome_message`                      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) | `0 5 * * 1`                     |
@@ -75,9 +74,8 @@ to the caller, since central workflows only have `workflow_call`.
 | `wiki_docs_dir`                                          | [wiki.publish](wiki.publish.md)                                  | `docs`                          |
 
 Per repository, pass the conventions of its commits: a repository whose convention is not `type(scope):`
-sets `deps_subject_prefix` (rtunk uses `^[deps]`) and `e2e_commit_subject`. Leave `deps_merge_method` at
-`merge`: the repositories only allow merge commits and the module refuses `squash`. Dependency updates
-come from Renovate: add a `renovate.json` to the repository ([Renovate](Renovate.md)).
+sets `e2e_commit_subject`. Dependency updates come from Renovate: add a `renovate.json` to the repository
+([Renovate](Renovate.md)); merging them is not automated.
 
 ### Workflows outside a group, and custom callers
 
@@ -131,12 +129,10 @@ These settings are not managed by the module and a missing one breaks a plan or 
    `GITHUB_TOKEN` with a warning, and the push is refused.
 5. **Repository setting "Allow GitHub Actions to create and approve pull requests"** for
    [e2e.sync](e2e.sync.md).
-6. **Repository setting "Allow auto-merge"** (merge commits allowed) and the required status checks, for
-   [core.deps](core.deps.md).
-7. **The wiki enabled and initialized** (one page created by hand) for [wiki.publish](wiki.publish.md).
-8. **Registries** for Pulumi providers: trusted publisher on npm and NuGet, PyPI token
+6. **The wiki enabled and initialized** (one page created by hand) for [wiki.publish](wiki.publish.md).
+7. **Registries** for Pulumi providers: trusted publisher on npm and NuGet, PyPI token
    ([Releases](Releases.md)).
-9. **Rulesets**: the callers are committed to the default branch, which the repository rulesets protect.
+8. **Rulesets**: the callers are committed to the default branch, which the repository rulesets protect.
    The Terraform GitHub App must be allowed to bypass them, or the callers go through a pull request
    (`branch`).
 

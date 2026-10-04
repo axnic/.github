@@ -47,7 +47,6 @@ run "core_naming" {
     condition = output.files == tolist([
       "merge_group,pull_request,push.qa.yaml",
       "pull_request,push,schedule.scan.yaml",
-      "pull_request.deps.yaml",
     ])
     error_message = "unexpected core caller files: ${jsonencode(output.files)}"
   }
@@ -62,10 +61,6 @@ run "core_naming" {
     error_message = "callers must start with the schema line"
   }
 
-  assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "      subject-prefix: build(deps)\n      merge-method: merge\n") || strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "      merge-method: merge\n      subject-prefix: build(deps)\n")
-    error_message = "deps caller must pass the default subject-prefix and merge-method"
-  }
 }
 
 # 2) review only with pr_agent_enabled.
@@ -126,33 +121,7 @@ run "release_go" {
   }
 }
 
-# 5) deps overrides (rtunk / pulumi conventions).
-run "deps_overrides" {
-  command = plan
 
-  variables {
-    workflow_groups = ["core"]
-    settings = {
-      deps_subject_prefix = "^[deps]"
-      deps_merge_method   = "squash"
-    }
-  }
-
-  assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: ^[deps]\n") && strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "merge-method: squash\n")
-    error_message = "deps caller must pass the overridden inputs"
-  }
-}
-
-run "deps_invalid_merge_method" {
-  command = plan
-
-  variables {
-    settings = { deps_merge_method = "rebase" }
-  }
-
-  expect_failures = [var.settings]
-}
 
 # 6) A required mise task is missing: only the guard (postcondition of the
 # tree read) may fail. The positive control is e2e_sync below.
@@ -573,63 +542,9 @@ run "invalid_osv_cron" {
   expect_failures = [var.settings]
 }
 
-# Plain YAML scalars when safe (the repositories' yamllint refuses redundant quotes), quoted when the
-# value is not a safe plain string or would be read as another type.
-run "yaml_scalars_plain" {
-  command = plan
 
-  variables {
-    workflow_groups = ["core"]
-    settings        = { deps_subject_prefix = "^[deps]" }
-  }
 
-  assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: ^[deps]\n") && strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "merge-method: merge\n")
-    error_message = "safe strings must be plain: ${github_repository_file.caller["pull_request.deps.yaml"].content}"
-  }
-}
 
-run "yaml_scalars_quoted_true" {
-  command = plan
-
-  variables {
-    workflow_groups = ["core"]
-    settings        = { deps_subject_prefix = "true" }
-  }
-
-  assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"true\"\n")
-    error_message = "a boolean-looking string must stay quoted"
-  }
-}
-
-run "yaml_scalars_quoted_number" {
-  command = plan
-
-  variables {
-    workflow_groups = ["core"]
-    settings        = { deps_subject_prefix = "1.20" }
-  }
-
-  assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"1.20\"\n")
-    error_message = "a number-looking string must stay quoted"
-  }
-}
-
-run "yaml_scalars_quoted_special" {
-  command = plan
-
-  variables {
-    workflow_groups = ["core"]
-    settings        = { deps_subject_prefix = "feat: x # y" }
-  }
-
-  assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"feat: x # y\"\n")
-    error_message = "a string with ': ' or ' #' must stay quoted"
-  }
-}
 
 run "yaml_scalars_plain_sentence" {
   command = plan
@@ -685,5 +600,63 @@ run "scan_languages_default" {
   assert {
     condition     = !strcontains(github_repository_file.caller["pull_request,push,schedule.scan.yaml"].content, "languages:")
     error_message = "without scan_languages the central default must apply"
+  }
+}
+
+# Plain YAML scalars when safe (the repositories' yamllint refuses redundant quotes), quoted when the
+# value is not a safe plain string or would be read as another type. Tested through the welcome message.
+run "yaml_scalars_plain_word" {
+  command = plan
+
+  variables {
+    workflows = [{ workflow = "oss.welcome" }]
+    settings  = { welcome_message = "docs/README.md" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: docs/README.md\n")
+    error_message = "a safe word must be plain"
+  }
+}
+
+run "yaml_scalars_quoted_boolean" {
+  command = plan
+
+  variables {
+    workflows = [{ workflow = "oss.welcome" }]
+    settings  = { welcome_message = "true" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: \"true\"\n")
+    error_message = "a boolean-looking string must stay quoted"
+  }
+}
+
+run "yaml_scalars_quoted_number" {
+  command = plan
+
+  variables {
+    workflows = [{ workflow = "oss.welcome" }]
+    settings  = { welcome_message = "1.20" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: \"1.20\"\n")
+    error_message = "a number-looking string must stay quoted"
+  }
+}
+
+run "yaml_scalars_quoted_special" {
+  command = plan
+
+  variables {
+    workflows = [{ workflow = "oss.welcome" }]
+    settings  = { welcome_message = "feat: x # y" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: \"feat: x # y\"\n")
+    error_message = "a string with ': ' or ' #' must stay quoted"
   }
 }

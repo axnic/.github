@@ -57,10 +57,6 @@ module "rtunk" {
   terraform_app_id        = var.github_app_id
   workflow_groups         = ["core", "go", "security", "release", "wiki", "oss"]
   workflow_commit_message = "=[ci]: Sync %s from axnic/.github"
-  workflow_params = {
-    deps_subject_prefix = "^[deps]"
-    deps_merge_method   = "merge"
-  }
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
 }

@@ -36,12 +36,6 @@ locals {
       triggers = ["pull_request", "push", "schedule"]
       tasks    = []
     }
-    "core.deps" = {
-      group    = "core"
-      action   = "deps"
-      triggers = ["pull_request"]
-      tasks    = []
-    }
     "issues.stale" = {
       group    = "issues"
       action   = "stale"

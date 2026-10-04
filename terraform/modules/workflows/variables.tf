@@ -156,9 +156,6 @@ variable "settings" {
     # core.scan
     scan_cron      = optional(string, "0 6 * * *")
     scan_languages = optional(list(string)) # input `languages`
-    # core.deps
-    deps_subject_prefix = optional(string, "build(deps)") # input `subject-prefix`
-    deps_merge_method   = optional(string, "merge")       # input `merge-method`: merge | squash
     # issues.stale
     stale_cron       = optional(string, "30 1 * * *")
     stale_days       = optional(number) # input `days-before-stale`
@@ -201,10 +198,6 @@ variable "settings" {
     error_message = "settings.wiki_docs_dir may only contain letters, digits, '.', '_', '/' and '-' (no leading '/')."
   }
 
-  validation {
-    condition     = contains(["merge", "squash"], var.settings.deps_merge_method)
-    error_message = "settings.deps_merge_method must be \"merge\" or \"squash\"."
-  }
 }
 
 # ── Commits ───────────────────────────────────────────────────────────────────
