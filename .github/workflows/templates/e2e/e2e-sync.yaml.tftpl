@@ -44,9 +44,9 @@ jobs:
 %{ if settings.e2e_readme_path != null || settings.e2e_commit_subject != null ~}
     with:
 %{ if settings.e2e_commit_subject != null ~}
-      commit-subject: ${jsonencode(settings.e2e_commit_subject)}
+      commit-subject: ${y.e2e_commit_subject}
 %{ endif ~}
 %{ if settings.e2e_readme_path != null ~}
-      readme-path: ${jsonencode(settings.e2e_readme_path)}
+      readme-path: ${y.e2e_readme_path}
 %{ endif ~}
 %{ endif ~}

@@ -63,7 +63,7 @@ run "core_naming" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "      subject-prefix: \"build(deps)\"\n      merge-method: \"merge\"\n") || strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "      merge-method: \"merge\"\n      subject-prefix: \"build(deps)\"\n")
+    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "      subject-prefix: build(deps)\n      merge-method: merge\n") || strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "      merge-method: merge\n      subject-prefix: build(deps)\n")
     error_message = "deps caller must pass the default subject-prefix and merge-method"
   }
 }
@@ -139,7 +139,7 @@ run "deps_overrides" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"^[deps]\"") && strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "merge-method: \"squash\"")
+    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: ^[deps]\n") && strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "merge-method: squash\n")
     error_message = "deps caller must pass the overridden inputs"
   }
 }
@@ -368,7 +368,7 @@ run "e2e_sync_overrides" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      commit-subject: \"ci[ci]: Sync E2E callers\"\n") && strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      readme-path: \"docs/README.md\"\n")
+    condition     = strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      commit-subject: \"ci[ci]: Sync E2E callers\"\n") && strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      readme-path: docs/README.md\n")
     error_message = "e2e overrides must be passed"
   }
 }
@@ -385,7 +385,7 @@ run "review_inputs_and_branch" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["issue_comment,pull_request.review.yaml"].content, "model: \"openrouter/x/y\"\n") && !strcontains(github_repository_file.caller["issue_comment,pull_request.review.yaml"].content, "fallback-model")
+    condition     = strcontains(github_repository_file.caller["issue_comment,pull_request.review.yaml"].content, "model: openrouter/x/y\n") && !strcontains(github_repository_file.caller["issue_comment,pull_request.review.yaml"].content, "fallback-model")
     error_message = "review must pass model and drop the unset fallback-model"
   }
 
@@ -571,4 +571,90 @@ run "invalid_osv_cron" {
   }
 
   expect_failures = [var.settings]
+}
+
+# Plain YAML scalars when safe (the repositories' yamllint refuses redundant quotes), quoted when the
+# value is not a safe plain string or would be read as another type.
+run "yaml_scalars_plain" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    settings        = { deps_subject_prefix = "^[deps]" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: ^[deps]\n") && strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "merge-method: merge\n")
+    error_message = "safe strings must be plain: ${github_repository_file.caller["pull_request.deps.yaml"].content}"
+  }
+}
+
+run "yaml_scalars_quoted_true" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    settings        = { deps_subject_prefix = "true" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"true\"\n")
+    error_message = "a boolean-looking string must stay quoted"
+  }
+}
+
+run "yaml_scalars_quoted_number" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    settings        = { deps_subject_prefix = "1.20" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"1.20\"\n")
+    error_message = "a number-looking string must stay quoted"
+  }
+}
+
+run "yaml_scalars_quoted_special" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    settings        = { deps_subject_prefix = "feat: x # y" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request.deps.yaml"].content, "subject-prefix: \"feat: x # y\"\n")
+    error_message = "a string with ': ' or ' #' must stay quoted"
+  }
+}
+
+run "yaml_scalars_plain_sentence" {
+  command = plan
+
+  variables {
+    workflows = [{ workflow = "oss.welcome" }]
+    settings  = { welcome_message = "Thanks for contributing!" }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: Thanks for contributing!\n")
+    error_message = "a sentence without ': ' or ' #' must be plain"
+  }
+}
+
+run "yaml_scalars_quoted_trailing_space" {
+  command = plan
+
+  variables {
+    workflows = [{ workflow = "oss.welcome" }]
+    settings  = { welcome_message = "Thanks " }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: \"Thanks \"\n")
+    error_message = "a trailing space must stay quoted"
+  }
 }

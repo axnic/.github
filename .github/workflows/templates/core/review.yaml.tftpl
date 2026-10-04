@@ -40,9 +40,9 @@ jobs:
 %{ if settings.review_model != null || settings.review_fallback_model != null ~}
     with:
 %{ if settings.review_fallback_model != null ~}
-      fallback-model: ${jsonencode(settings.review_fallback_model)}
+      fallback-model: ${y.review_fallback_model}
 %{ endif ~}
 %{ if settings.review_model != null ~}
-      model: ${jsonencode(settings.review_model)}
+      model: ${y.review_model}
 %{ endif ~}
 %{ endif ~}

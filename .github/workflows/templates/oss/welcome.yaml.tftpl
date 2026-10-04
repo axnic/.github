@@ -35,5 +35,5 @@ jobs:
       pull-requests: write
 %{ if settings.welcome_message != null ~}
     with:
-      message: ${jsonencode(settings.welcome_message)}
+      message: ${y.welcome_message}
 %{ endif ~}

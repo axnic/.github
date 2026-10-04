@@ -41,6 +41,20 @@ locals {
     }
   ]
 
+  # YAML scalars of the string settings, for the caller templates: plain when that is safe (the
+  # repositories' yamllint refuses redundant quotes), JSON-quoted, which is valid YAML, otherwise.
+  # Not plain: anything outside a conservative character set (no `:`, `#`, quotes, braces,
+  # leading indicator or trailing space) and what YAML would read as a boolean, a null or a number.
+  y = {
+    for k, v in local.s : k => (
+      can(regex("^[A-Za-z0-9_./^(][A-Za-z0-9 _./()\\[\\]^@!?+=,;%$&*<>|~-]*$", v)) &&
+      !can(regex(" $", v)) &&
+      !can(regex("^(?i:true|false|null|yes|no|on|off|y|n)$", v)) &&
+      !can(regex("^[-+.]?[0-9][0-9._eE+-]*$", v)) ? v : jsonencode(v)
+    )
+    if v != null && can(tostring(v)) && !can(tolist(v))
+  }
+
   # Keyed by file name: a duplicate name is a plan error.
   callers = {
     for c in concat(local.catalog_callers, local.custom_callers) :
@@ -49,6 +63,7 @@ locals {
         repository     = var.repository
         default_branch = var.default_branch
         settings       = local.s
+        y              = local.y
         publish        = local.publish
         caller         = "${join(",", sort(c.triggers))}.${c.action}.yaml"
       })))}\n"
