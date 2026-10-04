@@ -1,37 +1,56 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 #
 # =============================================================================
-# Dependency Updates — auto-merge of Dependabot patch & security updates
+# Dependency Updates — auto-merge of Dependabot and Renovate pull requests
 # =============================================================================
-# Reusable workflow for Dependabot's own PRs (github.actor). Callers must trigger it on
-# pull_request (not pull_request_target): Dependabot PRs are same-repo, never a fork.
+# Reusable workflow for the dependency bots' own PRs. Callers must trigger it on pull_request (not
+# pull_request_target): bot PRs are same-repo, never a fork.
 #
-# What it does:
+# Two jobs, one per bot, selected by github.actor:
+#
+# dependabot — Dependabot security updates (and any remaining version updates)
 #   1. Reads the update's semver level and any associated GHSA advisory via
 #      dependabot/fetch-metadata.
 #   2. For patch updates, or a security update at any semver level, approves the PR and enables
 #      GitHub's native auto-merge with an explicit, commit-convention-compliant subject
 #      `<subject-prefix>: Bump <dependencies> from <old> to <new>`: Dependabot's own commit/PR-title
-#      text never follows the convention. With merge-method `merge` the subject is the merge
-#      commit's title, with `squash` the squash commit's title (the body is left empty in both
-#      cases). The PR's own raw commits skip commitlint (see core.qa.yaml); this subject is what
-#      lands on main and gets re-validated there (push runs --last).
+#      text never follows the convention.
 #   3. Minor/major, non-security updates are left untouched: they stay open for manual review.
-#   4. github-actions ecosystem updates are approved but never auto-merged: their diff always
-#      edits a workflow file's `uses:` line, and the built-in GITHUB_TOKEN can never merge a
-#      commit that touches .github/workflows/** (a hard GitHub restriction no `permissions:`
-#      block can grant). These stay open for a human to merge.
+#
+# renovate — Renovate version and security updates, single or grouped
+#   1. Renovate decides what may be merged automatically (axnic/.github default preset) and says so
+#      with the marker `<!-- axnic:auto-merge -->` in the PR body: patches, minors of versions >= 1.0
+#      (grouped or not) and security updates. 0.x minors and majors never carry it.
+#   2. A PR with the marker is approved and gets GitHub's native auto-merge, with the PR title as the
+#      subject. The title is already convention-compliant (semantic commits, sentence-case) and, unlike
+#      Dependabot's, is valid for grouped PRs. It must start with `<subject-prefix>: `, otherwise the
+#      job fails instead of merging a subject that commitlint would reject on the default branch.
+#   3. A PR without the marker is left untouched, open for manual review.
+#
+# In both jobs, a PR that edits a workflow file (github-actions updates) is approved but never
+# auto-merged: the built-in GITHUB_TOKEN can never merge a commit that touches .github/workflows/**
+# (a hard GitHub restriction no `permissions:` block can grant). These stay open for a human.
+#
+# With merge-method `merge` the subject is the merge commit's title, with `squash` the squash
+# commit's title (the body is left empty in both cases). The PR's own commits are validated by
+# core.qa for Renovate (not for Dependabot); the subject set here is what lands on the default
+# branch and gets re-validated there (push runs --last).
 #
 # GitHub's native auto-merge only takes effect once the required status checks report success,
 # so this can run immediately without waiting on them.
 #
-# One-time setup: the repository setting "Allow auto-merge" enabled (merge commits allowed), and
-# main's required status checks configured.
+# One-time setup: the repository setting "Allow auto-merge" enabled, the merge method below allowed
+# on the repository, and the default branch's required status checks configured.
 #
 # Inputs:
-#   subject-prefix  string, default 'build(deps)' — what precedes ': Bump ...' in the merge
-#                   subject; must match the repository's commit convention (e.g. '^[deps]')
-#   merge-method    string, default 'merge' — 'merge' or 'squash'; anything else fails the job
+#   subject-prefix  string, default 'build(deps)' — what precedes ': ' in the merge subject; must
+#                   match the repository's commit convention (e.g. '^[deps]'). Dependabot: the
+#                   subject is `<prefix>: Bump ...`; Renovate: the PR title must start with it.
+#   merge-method    string, default 'merge' — 'merge' or 'squash'; anything else fails the job.
+#                   Must be a method the repository allows (the Terraform repository modules only
+#                   allow merge commits).
+#   renovate-actor  string, default 'renovate[bot]' — login of the Renovate bot (the hosted Mend
+#                   app); change it only for a self-hosted Renovate.
 # Secrets:     none (uses GITHUB_TOKEN)
 # Permissions: the caller must grant `contents: write`, `pull-requests: write`
 #
@@ -60,20 +79,24 @@ on:
   workflow_call:
     inputs:
       subject-prefix:
-        description: "Prefix of the merge-commit subject, before ': Bump ...'."
+        description: "Prefix of the merge-commit subject, before ': '."
         type: string
         default: build(deps)
       merge-method:
         description: "Auto-merge method: merge or squash."
         type: string
         default: merge
+      renovate-actor:
+        description: Login of the Renovate bot.
+        type: string
+        default: renovate[bot]
 
 # Minimal top-level permissions — each job declares what it needs.
 permissions: {}
 
 jobs:
   # ---------------------------------------------------------------------------
-  # auto-merge — approve and enable auto-merge for patch/security updates
+  # auto-merge — Dependabot: approve and enable auto-merge for patch/security updates
   # ---------------------------------------------------------------------------
   auto-merge:
     if: github.actor == 'dependabot[bot]'
@@ -125,4 +148,80 @@ jobs:
           esac
           gh pr merge "$PR_URL" --auto "--$MERGE_METHOD" \
             --subject "$SUBJECT_PREFIX: Bump $DEPENDENCY_NAMES from $PREVIOUS_VERSION to $NEW_VERSION" \
+            --body ""
+
+  # ---------------------------------------------------------------------------
+  # renovate — Renovate: approve and enable auto-merge for PRs carrying the marker
+  # ---------------------------------------------------------------------------
+  renovate:
+    if: >-
+      github.actor == inputs.renovate-actor &&
+      github.event.pull_request.user.login == inputs.renovate-actor
+    name: 🤖 Approve & auto-merge (Renovate)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: 🔎 Decide
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Read the live PR (title, body and files), not the event payload: Renovate edits
+          # the PR after opening it.
+          pr=$(gh pr view "$PR_NUMBER" --json title,body,files)
+          {
+            echo "title=$(jq -r '.title' <<<"$pr" | head -n 1)"
+            if jq -r '.body' <<<"$pr" | grep -qF '<!-- axnic:auto-merge -->'; then
+              echo "eligible=true"
+            else
+              echo "eligible=false"
+            fi
+            if jq -e '.files[].path | select(startswith(".github/workflows/"))' <<<"$pr" >/dev/null; then
+              echo "touches-workflows=true"
+            else
+              echo "touches-workflows=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ✅ Approve
+        if: steps.decide.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr review "$PR_URL" --approve \
+            --body "Auto-approved: dependency update eligible for auto-merge."
+
+      - name: 🔀 Enable auto-merge
+        if: |
+          steps.decide.outputs.eligible == 'true' &&
+          steps.decide.outputs.touches-workflows == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ steps.decide.outputs.title }}
+          SUBJECT_PREFIX: ${{ inputs.subject-prefix }}
+          MERGE_METHOD: ${{ inputs.merge-method }}
+        run: |
+          case "$MERGE_METHOD" in
+            merge | squash) ;;
+            *)
+              echo "::error::merge-method must be 'merge' or 'squash', got '$MERGE_METHOD'."
+              exit 1
+              ;;
+          esac
+          case "$PR_TITLE" in
+            "$SUBJECT_PREFIX: "?*) ;;
+            *)
+              echo "::error::The PR title '$PR_TITLE' does not start with '$SUBJECT_PREFIX: ': check the Renovate preset (semanticCommits or commitMessagePrefix)."
+              exit 1
+              ;;
+          esac
+          gh pr merge "$PR_URL" --auto "--$MERGE_METHOD" \
+            --subject "$PR_TITLE" \
             --body ""
