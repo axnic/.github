@@ -42,8 +42,8 @@ disable them with a `matchDepTypes: ["indirect"]` rule if the noise is not worth
 ### Which pull requests are merged automatically
 
 The preset puts `<!-- axnic:auto-merge -->` in the body of the pull requests that may be merged without a
-human: patches, minors from 1.0 on, and security updates. [core.deps](core.deps.md) approves them and
-enables auto-merge once the required checks pass. The 0.x minors and the majors stay open, as do the
+human: patches, minors from 1.0 on, and security updates. [core.deps](core.deps.md) enables auto-merge on them,
+which takes effect once the required checks pass. The 0.x minors and the majors stay open, as do the
 GitHub Actions updates (the built-in token cannot merge a change to `.github/workflows/**`).
 
 ### Overriding per repository

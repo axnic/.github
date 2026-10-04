@@ -14,8 +14,8 @@ Dependabot security updates are disabled by Terraform and `dependabot.yml` is be
 [Renovate](Renovate.md)): this job only serves the repositories not migrated yet, and can go once they all are.
 
 1. Reads the update's semver level and any associated GHSA advisory (`dependabot/fetch-metadata`).
-2. For **patch** updates, or a **security** update at any semver level, approves the pull request and
-   enables GitHub's native auto-merge with an explicit, convention-compliant subject
+2. For **patch** updates, or a **security** update at any semver level, enables GitHub's
+   native auto-merge with an explicit, convention-compliant subject
    `<subject-prefix>: Bump <dependencies> from <old> to <new>` (Dependabot's own commit text never
    follows the convention).
 3. Minor and major, non-security updates are left untouched, open for manual review.
@@ -30,7 +30,7 @@ marker.
 
 1. Only pull requests opened and pushed by `renovate-actor` are considered.
 2. Reads the live pull request (title, body, files), since Renovate edits it after opening it.
-3. With the marker: approves it and enables GitHub's native auto-merge, with the **pull request title**
+3. With the marker: enables GitHub's native auto-merge, with the **pull request title**
    as the subject. The title is already convention-compliant (semantic commits, sentence-case) and,
    unlike Dependabot's, is valid for a grouped pull request. It must start with `<subject-prefix>` followed by a colon and a space;
    otherwise the job **fails** rather than queue a subject that commitlint would reject on the default
@@ -39,9 +39,11 @@ marker.
 
 ### Both jobs
 
-A pull request that edits a workflow file (a `github-actions` update) is approved but **never
+A pull request that edits a workflow file (a `github-actions` update) is **never
 auto-merged**: `GITHUB_TOKEN` can never merge a commit that touches `.github/workflows/**`. It stays open
-for a human. With `merge` the subject is the merge commit's title, with `squash` the squash commit's
+for a human. Neither job approves a pull request: the rulesets require no approval, and `GITHUB_TOKEN` is
+not allowed to approve unless the repository setting "Allow GitHub Actions to create and approve pull
+requests" is on. With `merge` the subject is the merge commit's title, with `squash` the squash commit's
 title; the body is left empty in both cases.
 
 GitHub's auto-merge only takes effect once the required status checks succeed, so the workflow can run

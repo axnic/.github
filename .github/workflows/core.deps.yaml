@@ -11,8 +11,8 @@
 # dependabot — Dependabot security updates (and any remaining version updates)
 #   1. Reads the update's semver level and any associated GHSA advisory via
 #      dependabot/fetch-metadata.
-#   2. For patch updates, or a security update at any semver level, approves the PR and enables
-#      GitHub's native auto-merge with an explicit, commit-convention-compliant subject
+#   2. For patch updates, or a security update at any semver level, enables GitHub's native
+#      auto-merge with an explicit, commit-convention-compliant subject
 #      `<subject-prefix>: Bump <dependencies> from <old> to <new>`: Dependabot's own commit/PR-title
 #      text never follows the convention.
 #   3. Minor/major, non-security updates are left untouched: they stay open for manual review.
@@ -21,15 +21,16 @@
 #   1. Renovate decides what may be merged automatically (axnic/.github default preset) and says so
 #      with the marker `<!-- axnic:auto-merge -->` in the PR body: patches, minors of versions >= 1.0
 #      (grouped or not) and security updates. 0.x minors and majors never carry it.
-#   2. A PR with the marker is approved and gets GitHub's native auto-merge, with the PR title as the
+#   2. A PR with the marker gets GitHub's native auto-merge, with the PR title as the
 #      subject. The title is already convention-compliant (semantic commits, sentence-case) and, unlike
 #      Dependabot's, is valid for grouped PRs. It must start with `<subject-prefix>: `, otherwise the
 #      job fails instead of merging a subject that commitlint would reject on the default branch.
 #   3. A PR without the marker is left untouched, open for manual review.
 #
-# In both jobs, a PR that edits a workflow file (github-actions updates) is approved but never
-# auto-merged: the built-in GITHUB_TOKEN can never merge a commit that touches .github/workflows/**
-# (a hard GitHub restriction no `permissions:` block can grant). These stay open for a human.
+# In both jobs, a PR that edits a workflow file (github-actions updates) is never auto-merged: the
+# built-in GITHUB_TOKEN can never merge a commit that touches .github/workflows/** (a hard GitHub
+# restriction no `permissions:` block can grant). These stay open for a human. No job approves a PR:
+# the rulesets require no approval, and GITHUB_TOKEN may not be allowed to approve.
 #
 # With merge-method `merge` the subject is the merge commit's title, with `squash` the squash
 # commit's title (the body is left empty in both cases). The PR's own commits are validated by
@@ -96,11 +97,11 @@ permissions: {}
 
 jobs:
   # ---------------------------------------------------------------------------
-  # auto-merge — Dependabot: approve and enable auto-merge for patch/security updates
+  # auto-merge — Dependabot: enable auto-merge for patch/security updates
   # ---------------------------------------------------------------------------
   auto-merge:
     if: github.actor == 'dependabot[bot]'
-    name: 🤖 Approve & auto-merge
+    name: 🤖 Auto-merge
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -113,17 +114,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           alert-lookup: true
-
-      - name: ✅ Approve
-        if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.ghsa-id != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          gh pr review "$PR_URL" --approve \
-            --body "Auto-approved: patch/security dependency update."
 
       - name: 🔀 Enable auto-merge
         if: |
@@ -151,13 +141,13 @@ jobs:
             --body ""
 
   # ---------------------------------------------------------------------------
-  # renovate — Renovate: approve and enable auto-merge for PRs carrying the marker
+  # renovate — Renovate: enable auto-merge for PRs carrying the marker
   # ---------------------------------------------------------------------------
   renovate:
     if: >-
       github.actor == inputs.renovate-actor &&
       github.event.pull_request.user.login == inputs.renovate-actor
-    name: 🤖 Approve & auto-merge (Renovate)
+    name: 🤖 Auto-merge (Renovate)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -187,15 +177,6 @@ jobs:
               echo "touches-workflows=false"
             fi
           } >> "$GITHUB_OUTPUT"
-
-      - name: ✅ Approve
-        if: steps.decide.outputs.eligible == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          gh pr review "$PR_URL" --approve \
-            --body "Auto-approved: dependency update eligible for auto-merge."
 
       - name: 🔀 Enable auto-merge
         if: |

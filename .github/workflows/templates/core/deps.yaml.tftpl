@@ -3,13 +3,13 @@
 # =============================================================================
 # Dependency Updates — Dependabot and Renovate auto-merge
 # =============================================================================
-# Approves and auto-merges the pull requests of Dependabot (patch and security updates) and of
+# Auto-merges the pull requests of Dependabot (patch and security updates) and of
 # Renovate (the updates its preset marks as safe: patches, minors from 1.0 on, security updates),
 # with a merge-commit subject that follows the commit convention. Everything else stays open for
 # review.
 #
 # Jobs:
-#   deps — approve and merge Dependabot and Renovate updates, from core.deps
+#   deps — auto-merge Dependabot and Renovate updates, from core.deps
 #
 # MANAGED BY TERRAFORM (axnic/.github, terraform/modules/workflows) — do not edit by hand.
 # Reusable workflow: https://github.com/axnic/.github/blob/main/.github/workflows/core.deps.yaml
@@ -26,7 +26,7 @@ permissions: {}
 
 jobs:
   # ---------------------------------------------------------------------------
-  # deps — approve and merge Dependabot and Renovate updates, from core.deps
+  # deps — auto-merge Dependabot and Renovate updates, from core.deps
   # ---------------------------------------------------------------------------
   deps:
     name: 🤖 Dependency Auto-merge
