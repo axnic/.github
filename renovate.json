@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Renovate configuration of this repository: the default preset it publishes, plus the Terraform providers and lock files, which no other repository has.",
+    "The dependency dashboard is off: issues are disabled on this repository."
+  ],
+  "extends": ["local>axnic/.github:default"],
+  "enabledManagers": ["github-actions", "npm", "mise", "terraform"],
+  "dependencyDashboard": false,
+  "packageRules": [
+    {
+      "description": "Terraform providers and modules: minor and patch from 1.0 on, grouped (one pull request updates versions.tf and every lock file).",
+      "matchManagers": ["terraform"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "terraform minor and patch dependencies"
+    },
+    {
+      "description": "Patches of 0.x providers (toml, openrouter) are grouped; their minors stay separate.",
+      "matchManagers": ["terraform"],
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
+      "groupName": "terraform 0.x patch dependencies"
+    }
+  ]
+}
