@@ -658,3 +658,32 @@ run "yaml_scalars_quoted_trailing_space" {
     error_message = "a trailing space must stay quoted"
   }
 }
+
+# core.scan: the CodeQL languages are passed as a JSON array in a string (the central input), and
+# left to the central default (Go) when unset.
+run "scan_languages_override" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    settings        = { scan_languages = ["javascript-typescript"] }
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["pull_request,push,schedule.scan.yaml"].content, "languages: \"[\\\"javascript-typescript\\\"]\"\n")
+    error_message = "core.scan must receive the languages as a JSON array string"
+  }
+}
+
+run "scan_languages_default" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+  }
+
+  assert {
+    condition     = !strcontains(github_repository_file.caller["pull_request,push,schedule.scan.yaml"].content, "languages:")
+    error_message = "without scan_languages the central default must apply"
+  }
+}

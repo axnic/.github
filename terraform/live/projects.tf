@@ -133,6 +133,11 @@ module "medieval_claude" {
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
   workflow_groups  = ["core"]
+  # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code): the plugins'
+  # hooks are JavaScript.
+  workflow_params = {
+    scan_languages = ["javascript-typescript"]
+  }
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
 }
