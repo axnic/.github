@@ -48,7 +48,7 @@ Workflows, by group:
 | `go`       | [go.test](go.test.md), [go.publish](go.publish.md)                                                          |
 | `release`  | [release.prepare](release.prepare.md)                                                                       |
 | `pulumi`   | [pulumi.publish](pulumi.publish.md), [pulumi.codegen](pulumi.codegen.md) (the `pulumi` group includes `go`) |
-| `security` | [security.audit](security.audit.md)                                                                         |
+| `security` | [security.audit](security.audit.md), [security.osv](security.osv.md)                                        |
 | `oss`      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) (opt-in, public repositories)              |
 | `e2e`      | [e2e.run](e2e.run.md), [e2e.sync](e2e.sync.md)                                                              |
 | `wiki`     | [wiki.publish](wiki.publish.md)                                                                             |

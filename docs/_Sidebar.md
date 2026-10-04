@@ -17,7 +17,7 @@
 - go: [test](go.test.md) · [publish](go.publish.md)
 - [release.prepare](release.prepare.md)
 - pulumi: [publish](pulumi.publish.md) · [codegen](pulumi.codegen.md)
-- [security.audit](security.audit.md)
+- security: [audit](security.audit.md) · [osv](security.osv.md)
 - oss: [scorecard](oss.scorecard.md) · [welcome](oss.welcome.md)
 - e2e: [run](e2e.run.md) · [sync](e2e.sync.md)
 - [wiki.publish](wiki.publish.md)

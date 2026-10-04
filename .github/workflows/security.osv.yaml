@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# =============================================================================
+# OSV-Scanner — known vulnerabilities in the lockfiles, in code scanning
+# =============================================================================
+# Reusable workflow running OSV-Scanner (https://osv.dev) over the repository's manifests and
+# lockfiles (go.mod, go.sum, yarn.lock, package-lock.json, ...) and uploading the findings as
+# SARIF, so they show in the Security tab (code scanning) next to CodeQL. It complements the
+# repository's own `security.audit` (govulncheck, yarn audit), whose results stay in the job log.
+# The scan itself is Google's reusable workflows, pinned by commit.
+#
+#   scan     — push and schedule: full scan of the default branch, reported, never failing
+#   pr-scan  — pull request: only the vulnerabilities the pull request introduces; fails on any
+#              (fail-on-vuln), so existing ones never block an unrelated change
+#
+# Skipped on pull requests from Dependabot and from forks: their token cannot write the
+# code-scanning results (security-events: write). Renovate's pull requests are scanned.
+#
+# Inputs:
+#   scan-args     string, default '-r ./' — osv-scanner arguments, one per line (see
+#                 https://google.github.io/osv-scanner/usage/; --format and --output are set here)
+#   fail-on-vuln  boolean, default true — fail the pull request scan on a newly introduced
+#                 vulnerability
+# Secrets:     none
+# Permissions: the caller must grant `actions: read`, `contents: read`, `security-events: write`
+#
+# Example call (pull_request,push,schedule.osv.yaml):
+#
+#   name: OSV-Scanner
+#   on:
+#     pull_request: {}
+#     push:
+#       branches: [main]
+#     schedule:
+#       - cron: 30 5 * * 1
+#   permissions: {}
+#   jobs:
+#     osv:
+#       permissions:
+#         actions: read
+#         contents: read
+#         security-events: write
+#       uses: axnic/.github/.github/workflows/security.osv.yaml@main
+#       secrets: inherit
+# =============================================================================
+
+name: OSV-Scanner
+
+on:
+  workflow_call:
+    inputs:
+      scan-args:
+        description: osv-scanner arguments, one per line.
+        type: string
+        default: |-
+          -r
+          ./
+      fail-on-vuln:
+        description: Fail the pull request scan on a newly introduced vulnerability.
+        type: boolean
+        default: true
+
+# Minimal top-level permissions — each job declares what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # scan — full scan of the default branch, from google/osv-scanner-action
+  # ---------------------------------------------------------------------------
+  scan:
+    if: github.event_name != 'pull_request'
+    name: 🛡️ OSV-Scanner
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      scan-args: ${{ inputs.scan-args }}
+      fail-on-vuln: false
+
+  # ---------------------------------------------------------------------------
+  # pr-scan — vulnerabilities introduced by the pull request, from google/osv-scanner-action
+  # ---------------------------------------------------------------------------
+  pr-scan:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    name: 🛡️ OSV-Scanner (pull request)
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      scan-args: ${{ inputs.scan-args }}
+      fail-on-vuln: ${{ inputs.fail-on-vuln }}
