@@ -34,6 +34,12 @@
       "semanticCommitScope": "deps"
     },
     {
+      "description": "Never pin nor update the organisation's own reusable workflows and actions (axnic/.github, axnic/rtunk): the generated callers follow @main on purpose and Terraform rewrites them, so a pin would be reverted and would freeze the caller on an old version.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["axnic/**"],
+      "enabled": false
+    },
+    {
       "description": "Go indirect requirements are disabled by default in Renovate; Dependabot updated them, so keep them (they matter for security fixes).",
       "matchManagers": ["gomod"],
       "matchDepTypes": ["indirect"],
