@@ -1,0 +1,103 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "axnic default Renovate preset. Consume it with { \"extends\": [\"local>axnic/.github:default\"] }.",
+    "Minor and patch updates of versions >= 1.0 are grouped per manager; every minor of a 0.x version (breaking by semver convention) and every major gets its own pull request; patches of 0.x versions are grouped.",
+    "Commit subjects follow the organisation convention: build(deps): Sentence-case subject.",
+    "Pull requests that the central Dependency Updates workflow (core.deps) may auto-merge carry the marker <!-- axnic:auto-merge -->."
+  ],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "enabledManagers": ["gomod", "github-actions", "npm", "mise", "custom.regex"],
+  "timezone": "Europe/Paris",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "rebaseWhen": "behind-base-branch",
+  "platformCommit": "enabled",
+  "automerge": false,
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+  "labels": ["type::chore"],
+  "semanticCommits": "enabled",
+  "semanticCommitType": "build",
+  "semanticCommitScope": "deps",
+  "commitMessageLowerCase": "never",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["type::security"],
+    "prBodyNotes": ["<!-- axnic:auto-merge -->"]
+  },
+  "packageRules": [
+    {
+      "description": "Force the commit type and scope: presets of config:recommended set 'fix' or 'chore' for some dependency kinds, which commitlint's scope-enum and the organisation convention do not accept.",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "build",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "Go indirect requirements are disabled by default in Renovate; Dependabot updated them, so keep them (they matter for security fixes).",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "enabled": true
+    },
+    {
+      "description": "Minor and patch updates of versions >= 1.0: one pull request per manager.",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "go minor and patch dependencies"
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "npm minor and patch dependencies"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "github actions minor and patch updates"
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "mise tools minor and patch updates"
+    },
+    {
+      "description": "Patches of 0.x versions are grouped (minors of 0.x versions stay separate: no group matches them).",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
+      "groupName": "go 0.x patch dependencies"
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
+      "groupName": "npm 0.x patch dependencies"
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
+      "groupName": "mise tools 0.x patch updates"
+    },
+    {
+      "description": "Majors are never grouped.",
+      "matchUpdateTypes": ["major"],
+      "groupName": null,
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "Auto-merge marker, read by core.deps: patches, and minors of versions >= 1.0 (a grouped pull request carries it when any of its updates does: the groups below only contain qualifying updates, so do not add custom groups mixing in majors or 0.x minors). 0.x minors and majors never carry it.",
+      "matchUpdateTypes": ["patch", "pin", "pinDigest", "digest"],
+      "prBodyNotes": ["<!-- axnic:auto-merge -->"]
+    },
+    {
+      "matchUpdateTypes": ["minor"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "prBodyNotes": ["<!-- axnic:auto-merge -->"]
+    }
+  ]
+}

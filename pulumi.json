@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "axnic Renovate preset for Pulumi providers. Consume it with { \"extends\": [\"local>axnic/.github:pulumi\"] }.",
+    "Extends the default preset. The generated SDKs (sdk/) are rebuilt by codegen and never updated by hand."
+  ],
+  "extends": ["local>axnic/.github:default"],
+  "ignorePaths": ["**/node_modules/**", "**/sdk/**"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Pulumi CLI version pinned in .pulumi.version (read by the vfox-pulumi mise plugin).",
+      "managerFilePatterns": ["/(^|/)\\.pulumi\\.version$/"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "pulumi/pulumi",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "The provider's own generated Go SDK, required by examples/go through a local replace directive: never a registry update.",
+      "matchPackageNames": ["github.com/axnic/*/sdk/go/**"],
+      "enabled": false
+    },
+    {
+      "description": "The Pulumi engine and SDKs move together: Go sdk/pkg, the npm SDK and the CLI pinned in .pulumi.version.",
+      "matchPackageNames": [
+        "pulumi/pulumi",
+        "github.com/pulumi/pulumi/**",
+        "@pulumi/pulumi"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "pulumi sdk"
+    },
+    {
+      "description": "Provider framework and test helpers (pulumi-go-provider, providertest, schema tooling).",
+      "matchPackageNames": [
+        "github.com/pulumi/pulumi-go-provider",
+        "github.com/pulumi/providertest",
+        "github.com/pulumi/pulumi-yaml",
+        "@pulumi/**"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "groupName": "pulumi provider tooling"
+    }
+  ]
+}
