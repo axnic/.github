@@ -1,7 +1,7 @@
 # Renovate
 
 Dependency updates of the organisation are opened by **Renovate**, configured by two shared presets
-at the root of this repository, and merged by the [core.deps](core.deps.md) workflow. Dependabot
+at the root of this repository. Merging is not automated by a workflow. Dependabot
 **alerts** stay on (they feed the Security tab and Renovate's security pull requests), but there is no
 `dependabot.yml` and no Dependabot pull request any more.
 
@@ -39,12 +39,11 @@ Go modules are `v`-prefixed, so the 0.x test is `/^[\^~=v ]*0\./` (a plain `/^0\
 Indirect Go requirements are kept enabled, as Dependabot did; the go group then carries many lookups,
 disable them with a `matchDepTypes: ["indirect"]` rule if the noise is not worth it.
 
-### Which pull requests are merged automatically
+### Merging
 
-The preset puts `<!-- axnic:auto-merge -->` in the body of the pull requests that may be merged without a
-human: patches, minors from 1.0 on, and security updates. [core.deps](core.deps.md) enables auto-merge on them,
-which takes effect once the required checks pass. The 0.x minors and the majors stay open, as do the
-GitHub Actions updates (the built-in token cannot merge a change to `.github/workflows/**`).
+No workflow merges the pull requests: they are reviewed and merged by hand (or by whatever merge bot a
+repository uses). The only constraint is that the repositories allow **merge commits** only. GitHub Actions
+updates touch `.github/workflows/**`; a merge of those cannot be done with the built-in `GITHUB_TOKEN`.
 
 ### Overriding per repository
 
@@ -59,8 +58,6 @@ A repository's own `renovate.json` is merged after the preset. For example, rtun
 }
 ```
 
-and its caller sets `deps_subject_prefix = "^[deps]"` in Terraform, as before.
-
 ## Security
 
 - **Alerts** (`vulnerability_alerts`) stay enabled by Terraform: they feed the Security tab (the board) and
@@ -68,8 +65,7 @@ and its caller sets `deps_subject_prefix = "^[deps]"` in Terraform, as before.
 - **Dependabot security updates** are **off** by default (`security_features` no longer contains
   `"dependabot"`): they only open pull requests, which are Renovate's job now, and would double every
   security pull request. The alerts do not depend on them.
-- Renovate opens a pull request for each alert it can fix, labelled `type::security`, merged by
-  [core.deps](core.deps.md) at any semver level.
+- Renovate opens a pull request for each alert it can fix, labelled `type::security`.
 - Scanning: CodeQL ([core.scan](core.scan.md)), the repository's own audit ([security.audit](security.audit.md))
   and OSV-Scanner with code-scanning upload ([security.osv](security.osv.md)).
 
@@ -89,4 +85,4 @@ Terraform cannot do these:
   API, so its commits are signed ("Verified") by GitHub. Without it, no merge commit would be accepted.
 - `rebaseWhen: behind-base-branch` keeps pull requests up to date, as the ruleset's strict status checks need.
 - The app only needs to create branches and pull requests; it is not a ruleset bypass actor.
-- Repositories only allow **merge commits**: `deps_merge_method` stays `merge`.
+- Repositories only allow **merge commits**.

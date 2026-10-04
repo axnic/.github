@@ -43,7 +43,7 @@ Workflows, by group:
 
 | Group      | Workflows                                                                                                   |
 | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `core`     | [core.qa](core.qa.md), [core.review](core.review.md), [core.scan](core.scan.md), [core.deps](core.deps.md)  |
+| `core`     | [core.qa](core.qa.md), [core.review](core.review.md), [core.scan](core.scan.md)                             |
 | `issues`   | [issues.stale](issues.stale.md) (opt-in)                                                                    |
 | `go`       | [go.test](go.test.md), [go.publish](go.publish.md)                                                          |
 | `release`  | [release.prepare](release.prepare.md)                                                                       |

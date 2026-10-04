@@ -14,8 +14,7 @@
 #                 Findings become annotations
 #   commitlint  — commit convention on every commit of the PR (`mise run ci:commitlint`).
 #                 Skipped for Dependabot PRs: its own commit messages never follow the
-#                 convention; core.deps.yaml sets a compliant subject on the merge commit, and
-#                 on push only that merge commit (--last) is validated
+#                 convention; on push only the last commit (--last) is validated
 #
 # Inputs:      none
 # Secrets:     none

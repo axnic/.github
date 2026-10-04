@@ -3,8 +3,7 @@
   "description": [
     "axnic default Renovate preset. Consume it with { \"extends\": [\"local>axnic/.github:default\"] }.",
     "Minor and patch updates of versions >= 1.0 are grouped per manager; every minor of a 0.x version (breaking by semver convention) and every major gets its own pull request; patches of 0.x versions are grouped.",
-    "Commit subjects follow the organisation convention: build(deps): Sentence-case subject.",
-    "Pull requests that the central Dependency Updates workflow (core.deps) may auto-merge carry the marker <!-- axnic:auto-merge -->."
+    "Commit subjects follow the organisation convention: build(deps): Sentence-case subject."
   ],
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "enabledManagers": ["gomod", "github-actions", "npm", "mise", "custom.regex"],
@@ -23,8 +22,7 @@
   "commitMessageLowerCase": "never",
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": ["type::security"],
-    "prBodyNotes": ["<!-- axnic:auto-merge -->"]
+    "labels": ["type::security"]
   },
   "packageRules": [
     {
@@ -94,16 +92,6 @@
       "matchUpdateTypes": ["major"],
       "groupName": null,
       "dependencyDashboardApproval": false
-    },
-    {
-      "description": "Auto-merge marker, read by core.deps: patches, and minors of versions >= 1.0 (a grouped pull request carries it when any of its updates does: the groups below only contain qualifying updates, so do not add custom groups mixing in majors or 0.x minors). 0.x minors and majors never carry it.",
-      "matchUpdateTypes": ["patch", "pin", "pinDigest", "digest"],
-      "prBodyNotes": ["<!-- axnic:auto-merge -->"]
-    },
-    {
-      "matchUpdateTypes": ["minor"],
-      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
-      "prBodyNotes": ["<!-- axnic:auto-merge -->"]
     }
   ]
 }

@@ -12,7 +12,7 @@
 
 **Workflows**
 
-- core: [qa](core.qa.md) · [review](core.review.md) · [scan](core.scan.md) · [deps](core.deps.md)
+- core: [qa](core.qa.md) · [review](core.review.md) · [scan](core.scan.md)
 - [issues.stale](issues.stale.md)
 - go: [test](go.test.md) · [publish](go.publish.md)
 - [release.prepare](release.prepare.md)

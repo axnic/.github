@@ -75,7 +75,7 @@ This repository calls it with a local reference: `uses: ./.github/workflows/core
   skipped.
 - The `rtunk` job uses the `axnic/rtunk@main` action, not a SHA pin.
 - Dependabot pull requests skip `commitlint` because their own commit messages never follow the
-  convention; [core.deps](core.deps.md) gives the merge commit a compliant subject, which is validated
-  on `push`.
+  convention; only the last commit is validated on `push`. Renovate's are not skipped: its commits follow
+  the convention.
 - mise is installed before looking for `ci:lint` (it is the tool that tells whether the task exists),
   even for repositories without it.
