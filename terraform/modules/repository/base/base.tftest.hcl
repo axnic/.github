@@ -207,6 +207,20 @@ run "invalid_workflow_params_key" {
   ]
 }
 
+# 9b) Repositories only allow merge commits: a squash auto-merge would be refused by GitHub.
+run "invalid_deps_merge_method" {
+  command = plan
+
+  variables {
+    name            = "tf-base-squash"
+    workflow_params = { deps_merge_method = "squash" }
+  }
+
+  expect_failures = [
+    var.workflow_params,
+  ]
+}
+
 # 10) The Terraform app is a bypass actor of the ruleset unless opted out.
 run "terraform_app_bypass" {
   command = plan

@@ -218,8 +218,9 @@ resource "github_repository_ruleset" "main" {
 }
 
 # Dependabot security updates: automatically open PRs to bump vulnerable
-# dependency versions. Pairs with secret scanning for a full supply-chain
-# security posture without any manual triage of CVE feeds.
+# dependency versions, from the Dependabot alerts (vulnerability_alerts above) and without any
+# dependabot.yml. Version updates are Renovate's job (axnic/.github, default.json), and Renovate
+# also reads the same alerts for its security PRs: with both enabled, an alert can get two PRs.
 resource "github_repository_dependabot_security_updates" "this" {
   repository = github_repository.this.name
   enabled    = contains(var.security_features, "dependabot")

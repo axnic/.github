@@ -82,8 +82,13 @@ variable "features" {
 #                                             requires GHAS for private.
 #   "secret_scanning_non_provider_patterns" — Scan for custom org/repo secret patterns. Free
 #                                             on public; requires GHAS for private.
-#   "vulnerability_alerts"                  — Dependabot vulnerability alerts (all repos).
-#   "dependabot"                            — Dependabot version-update security PRs.
+#   "vulnerability_alerts"                  — Dependabot alerts (all repos). Renovate reads them to
+#                                             open its security pull requests: keep them enabled.
+#   "dependabot"                            — Dependabot security updates (PRs opened from the
+#                                             alerts, no dependabot.yml needed). Version updates are
+#                                             Renovate's (axnic/.github, default.json). While enabled,
+#                                             Dependabot and Renovate may both open a PR for the same
+#                                             alert; drop "dependabot" here to leave it to Renovate.
 #
 # The security_and_analysis block (code_security, secret_scanning and variants)
 # is only emitted for public repos — these features are free there and GHAS is
@@ -291,6 +296,13 @@ variable "workflow_params" {
       ], k)
     ])
     error_message = "workflow_params keys must be attributes of modules/workflows var.settings (keep this list in sync)."
+  }
+
+  # This module only allows merge commits (allow_squash_merge = false below in main.tf), so the
+  # auto-merge of core.deps (`gh pr merge --squash`) would be refused by GitHub.
+  validation {
+    condition     = try(var.workflow_params.deps_merge_method, "merge") == "merge"
+    error_message = "workflow_params.deps_merge_method must be \"merge\": repositories only allow merge commits."
   }
 }
 

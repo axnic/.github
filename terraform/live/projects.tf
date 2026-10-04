@@ -88,9 +88,6 @@ module "pulumi_garage" {
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
   workflow_groups  = ["core", "go", "security", "pulumi", "release", "oss", "e2e"]
-  workflow_params = {
-    deps_merge_method = "squash"
-  }
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
 }
@@ -118,9 +115,6 @@ module "pulumi_pocket_id" {
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
   workflow_groups  = []
-  workflow_params = {
-    deps_merge_method = "squash"
-  }
   # TODO(owner): set pr_agent.monthly_budget_usd
 }
 
