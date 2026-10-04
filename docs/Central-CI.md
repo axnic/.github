@@ -35,6 +35,7 @@ General:
 - [Conventions](Conventions.md): file naming, house style, why callers follow `@main`, security rules,
   commit conventions.
 - [Mise-Tasks](Mise-Tasks.md): the mise tasks a repository must define, and which workflow needs which.
+- [Renovate](Renovate.md): the shared Renovate presets and how dependency updates are merged.
 - [Releases](Releases.md): the two-stage release, recovery, verification of the artifacts.
 - [Adding-A-Repo](Adding-A-Repo.md): enabling groups for a repository in Terraform, and the manual prerequisites.
 

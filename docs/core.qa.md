@@ -8,11 +8,11 @@ The quality gate of a repository: it validates every pull request (and merge-que
 lands on the default branch, and every push to it (the default branch only accepts merged pull
 requests, so a push is the merge commit).
 
-| Job          | What it does                                                                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci-lint`    | Repository-specific linters through `mise run ci:lint`; skipped when the repository does not define that task.                                |
-| `rtunk`      | rtunk's lint stack (`.rtunk/rtunk.yaml`) through the `axnic/rtunk` action: changed files since the base on `pull_request`/`merge_group`, every file on `push`. Findings become annotations. |
-| `commitlint` | The commit convention on every commit of the pull request (`mise run ci:commitlint`). Skipped for Dependabot pull requests. On `push`, only the last commit (`--last`) is validated. |
+| Job          | What it does                                                                                                                                                                                                                                 |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci-lint`    | Repository-specific linters through `mise run ci:lint`; skipped when the repository does not define that task.                                                                                                                               |
+| `rtunk`      | rtunk's lint stack (`.rtunk/rtunk.yaml`) through the `axnic/rtunk` action: changed files since the base on `pull_request`/`merge_group`, every file on `push`. Findings become annotations.                                                  |
+| `commitlint` | The commit convention on every commit of the pull request (`mise run ci:commitlint`). Skipped for Dependabot pull requests, not for Renovate's (its commits follow the convention). On `push`, only the last commit (`--last`) is validated. |
 
 The mode is derived from the caller's event (`github.event_name`); there is no input.
 

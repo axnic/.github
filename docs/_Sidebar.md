@@ -2,6 +2,7 @@
 
 - [Terraform](Terraform.md)
 - [Central CI](Central-CI.md)
+- [Renovate](Renovate.md)
 - [Skills](Skills.md)
 - [Conventions](Conventions.md)
 - [Releases](Releases.md)

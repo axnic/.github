@@ -17,17 +17,17 @@ reference: the variables below are those of its `variables.tf` at the time of wr
 
 ## Groups
 
-| Group      | Generated callers (file names)                                                                                                           | Default for     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `core`     | `merge_group,pull_request,push.qa.yaml`, `issue_comment,pull_request.review.yaml`, `pull_request,push,schedule.scan.yaml`, `pull_request.deps.yaml` | all repositories |
-| `go`       | `pull_request,push.test.yaml`                                                                                                            | Go modules      |
-| `release`  | `workflow_dispatch.release.yaml` (`prepare` then `publish`)                                                                               | Go, Pulumi      |
-| `pulumi`   | `pull_request_target.codegen.yaml`, and the Pulumi `publish` job of the release caller (includes `go`)                                    | Pulumi modules  |
-| `security` | `schedule,workflow_dispatch.audit.yaml`                                                                                                  | Go, Pulumi      |
-| `issues`   | `schedule,workflow_dispatch.stale.yaml`                                                                                                  | **opt-in**      |
-| `oss`      | `schedule,workflow_dispatch.scorecard.yaml`, `pull_request_target.welcome.yaml`                                                           | **opt-in**      |
-| `e2e`      | `schedule,workflow_dispatch.e2e-sync.yaml`; the per-version callers are then created by the sync                                          | explicit        |
-| `wiki`     | `push,workflow_dispatch.wiki.yaml`                                                                                                       | with the `wiki` feature |
+| Group      | Generated callers (file names)                                                                                                                      | Default for             |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `core`     | `merge_group,pull_request,push.qa.yaml`, `issue_comment,pull_request.review.yaml`, `pull_request,push,schedule.scan.yaml`, `pull_request.deps.yaml` | all repositories        |
+| `go`       | `pull_request,push.test.yaml`                                                                                                                       | Go modules              |
+| `release`  | `workflow_dispatch.release.yaml` (`prepare` then `publish`)                                                                                         | Go, Pulumi              |
+| `pulumi`   | `pull_request_target.codegen.yaml`, and the Pulumi `publish` job of the release caller (includes `go`)                                              | Pulumi modules          |
+| `security` | `schedule,workflow_dispatch.audit.yaml`                                                                                                             | Go, Pulumi              |
+| `issues`   | `schedule,workflow_dispatch.stale.yaml`                                                                                                             | **opt-in**              |
+| `oss`      | `schedule,workflow_dispatch.scorecard.yaml`, `pull_request_target.welcome.yaml`                                                                     | **opt-in**              |
+| `e2e`      | `schedule,workflow_dispatch.e2e-sync.yaml`; the per-version callers are then created by the sync                                                    | explicit                |
+| `wiki`     | `push,workflow_dispatch.wiki.yaml`                                                                                                                  | with the `wiki` feature |
 
 The defaults per module type are the intent of the design: `go` = core + go + security + release
 (+ wiki when the feature is on), `pulumi` = core + go + security + pulumi + release, `base` = core. Check the
@@ -38,19 +38,19 @@ The `core.review` caller (`review`) is only generated for a repository that has 
 
 ## Module inputs
 
-| Variable            | Purpose                                                                                                                                  |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `repository`        | Name of the target repository.                                                                                                           |
-| `default_branch`    | Default branch (default `main`): read by the task guard, rendered in the callers' triggers, and where they are committed unless `branch` is set. |
-| `features`          | Enabled GitHub features (`issues`, `wiki`, `projects`, `discussions`).                                                                   |
-| `branch`            | Branch the caller files are committed to; `null` = the default branch.                                                                    |
-| `workflow_groups`   | Groups to enable: `core`, `issues`, `go`, `release`, `pulumi`, `security`, `oss`, `e2e`, `wiki`.                                          |
-| `workflows`         | Single catalog entries enabled without their group, e.g. `[{ workflow = "pulumi.codegen" }]`.                                             |
-| `custom_workflows`  | Repository-specific callers (below).                                                                                                      |
-| `publish`           | Publish job of the release caller: `"go"` or `"pulumi"`; `null` derives it from the groups.                                                |
-| `pr_agent_enabled`  | Generate the `core.review` caller. True only when the repository has an OpenRouter key.                                                    |
-| `settings`          | Per-workflow parameters (below).                                                                                                          |
-| `commit_message`    | Commit message of caller updates, `%s` = the caller file name (default `ci(ci): Sync %s from axnic/.github-private`). It must satisfy the repository's commitlint. |
+| Variable           | Purpose                                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `repository`       | Name of the target repository.                                                                                                                                     |
+| `default_branch`   | Default branch (default `main`): read by the task guard, rendered in the callers' triggers, and where they are committed unless `branch` is set.                   |
+| `features`         | Enabled GitHub features (`issues`, `wiki`, `projects`, `discussions`).                                                                                             |
+| `branch`           | Branch the caller files are committed to; `null` = the default branch.                                                                                             |
+| `workflow_groups`  | Groups to enable: `core`, `issues`, `go`, `release`, `pulumi`, `security`, `oss`, `e2e`, `wiki`.                                                                   |
+| `workflows`        | Single catalog entries enabled without their group, e.g. `[{ workflow = "pulumi.codegen" }]`.                                                                      |
+| `custom_workflows` | Repository-specific callers (below).                                                                                                                               |
+| `publish`          | Publish job of the release caller: `"go"` or `"pulumi"`; `null` derives it from the groups.                                                                        |
+| `pr_agent_enabled` | Generate the `core.review` caller. True only when the repository has an OpenRouter key.                                                                            |
+| `settings`         | Per-workflow parameters (below).                                                                                                                                   |
+| `commit_message`   | Commit message of caller updates, `%s` = the caller file name (default `ci(ci): Sync %s from axnic/.github-private`). It must satisfy the repository's commitlint. |
 
 Validations that stop the plan: the `issues` group or `issues.stale` without the `issues` feature,
 `core.review` requested explicitly without `pr_agent_enabled`, a malformed cron or `merge_method`, a
@@ -61,22 +61,23 @@ rendered `on:` that does not match the file name.
 Inputs left unset are not passed: the central default applies (see each workflow page). Crons belong
 to the caller, since central workflows only have `workflow_call`.
 
-| Setting                                                  | Used by                                          | Default                       |
-| -------------------------------------------------------- | ------------------------------------------------ | ----------------------------- |
-| `go_paths`, `go_os`                                      | [go.test](go.test.md): path filter, input `os`   | `["**.go", "go.mod", "go.sum"]` |
-| `review_model`, `review_fallback_model`                  | [core.review](core.review.md)                    | central defaults              |
-| `scan_cron`, `scan_languages`                            | [core.scan](core.scan.md)                        | `0 6 * * *`                   |
-| `deps_subject_prefix`, `deps_merge_method`               | [core.deps](core.deps.md)                        | `build(deps)`, `merge`        |
-| `stale_cron`, `stale_days`, `stale_close_days`           | [issues.stale](issues.stale.md)                  | `30 1 * * *`                  |
-| `audit_cron`                                             | [security.audit](security.audit.md)              | `0 6 * * *`                   |
-| `scorecard_cron`, `welcome_message`                      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) | `0 5 * * 1`    |
-| `pulumi_sdks`                                            | [pulumi.publish](pulumi.publish.md)              | central default               |
-| `e2e_sync_cron`, `e2e_readme_path`, `e2e_commit_subject` | [e2e.sync](e2e.sync.md)                          | `0 3 * * 1`                   |
-| `wiki_docs_dir`                                          | [wiki.publish](wiki.publish.md)                  | `docs`                        |
+| Setting                                                  | Used by                                                          | Default                         |
+| -------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------- |
+| `go_paths`, `go_os`                                      | [go.test](go.test.md): path filter, input `os`                   | `["**.go", "go.mod", "go.sum"]` |
+| `review_model`, `review_fallback_model`                  | [core.review](core.review.md)                                    | central defaults                |
+| `scan_cron`, `scan_languages`                            | [core.scan](core.scan.md)                                        | `0 6 * * *`                     |
+| `deps_subject_prefix`, `deps_merge_method`               | [core.deps](core.deps.md)                                        | `build(deps)`, `merge`          |
+| `stale_cron`, `stale_days`, `stale_close_days`           | [issues.stale](issues.stale.md)                                  | `30 1 * * *`                    |
+| `audit_cron`                                             | [security.audit](security.audit.md)                              | `0 6 * * *`                     |
+| `scorecard_cron`, `welcome_message`                      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) | `0 5 * * 1`                     |
+| `pulumi_sdks`                                            | [pulumi.publish](pulumi.publish.md)                              | central default                 |
+| `e2e_sync_cron`, `e2e_readme_path`, `e2e_commit_subject` | [e2e.sync](e2e.sync.md)                                          | `0 3 * * 1`                     |
+| `wiki_docs_dir`                                          | [wiki.publish](wiki.publish.md)                                  | `docs`                          |
 
-Per repository, pass the conventions of its commits and merges: Pulumi repositories use
-`deps_merge_method = "squash"`, and a repository whose convention is not `type(scope):` sets
-`deps_subject_prefix` (rtunk uses `^[deps]`) and `e2e_commit_subject`.
+Per repository, pass the conventions of its commits: a repository whose convention is not `type(scope):`
+sets `deps_subject_prefix` (rtunk uses `^[deps]`) and `e2e_commit_subject`. Leave `deps_merge_method` at
+`merge`: the repositories only allow merge commits and the module refuses `squash`. Dependency updates
+come from Renovate: add a `renovate.json` to the repository ([Renovate](Renovate.md)).
 
 ### Workflows outside a group, and custom callers
 

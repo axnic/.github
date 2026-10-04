@@ -11,7 +11,7 @@ Auto-merge of the dependency bots' own pull requests. The caller must trigger it
 ### `auto-merge` - Dependabot
 
 Dependabot only opens security updates once `dependabot.yml` is gone (Dependabot alerts and security
-updates stay enabled, see [Central CI](Central-CI.md)).
+updates stay enabled, see [Renovate](Renovate.md)).
 
 1. Reads the update's semver level and any associated GHSA advisory (`dependabot/fetch-metadata`).
 2. For **patch** updates, or a **security** update at any semver level, approves the pull request and
@@ -32,7 +32,7 @@ marker.
 2. Reads the live pull request (title, body, files), since Renovate edits it after opening it.
 3. With the marker: approves it and enables GitHub's native auto-merge, with the **pull request title**
    as the subject. The title is already convention-compliant (semantic commits, sentence-case) and,
-   unlike Dependabot's, is valid for a grouped pull request. It must start with `<subject-prefix>: `;
+   unlike Dependabot's, is valid for a grouped pull request. It must start with `<subject-prefix>` followed by a colon and a space;
    otherwise the job **fails** rather than queue a subject that commitlint would reject on the default
    branch.
 4. Without the marker: nothing happens, the pull request stays open for review.
@@ -60,11 +60,11 @@ branch. For Renovate: the Renovate GitHub App installed on the repository and a 
 
 ## Inputs
 
-| Input            | Type   | Default         | Notes                                                                                                              |
-| ---------------- | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `subject-prefix` | string | `build(deps)`   | What precedes `: ` in the merge subject; must match the repository's commit convention (rtunk: `^[deps]`).         |
-| `merge-method`   | string | `merge`         | `merge` or `squash`; anything else fails the job. Must be a method the repository allows.                          |
-| `renovate-actor` | string | `renovate[bot]` | Login of the Renovate bot (hosted Mend app). Change it only for a self-hosted Renovate.                            |
+| Input            | Type   | Default         | Notes                                                                                                           |
+| ---------------- | ------ | --------------- | --------------------------------------------------------------------------------------------------------------- |
+| `subject-prefix` | string | `build(deps)`   | What precedes the colon in the merge subject; must match the repository's commit convention (rtunk: `^[deps]`). |
+| `merge-method`   | string | `merge`         | `merge` or `squash`; anything else fails the job. Must be a method the repository allows.                       |
+| `renovate-actor` | string | `renovate[bot]` | Login of the Renovate bot (hosted Mend app). Change it only for a self-hosted Renovate.                         |
 
 ## Secrets
 
