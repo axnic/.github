@@ -71,7 +71,7 @@ variable "features" {
 variable "security_features" {
   type        = list(string)
   description = "Security features to enable. See variable comment for valid values and constraints."
-  default     = ["vulnerability_alerts", "dependabot"]
+  default     = ["vulnerability_alerts"]
 
   validation {
     condition = length([

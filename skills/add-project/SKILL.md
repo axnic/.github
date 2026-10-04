@@ -53,7 +53,7 @@ module "<repo_name>" {
   # TODO(owner): set pr_agent.monthly_budget_usd (never set a budget by default)
 
   features          = ["issues"]
-  security_features = ["vulnerability_alerts", "dependabot"]
+  security_features = ["vulnerability_alerts"] # alerts only: Renovate opens the PRs
 
   npm_packages = ["@axnic/<package-name>"] # omit if no npm packages
 

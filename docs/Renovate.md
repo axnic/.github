@@ -3,7 +3,7 @@
 Dependency updates of the organisation are opened by **Renovate**, configured by two shared presets
 at the root of this repository, and merged by the [core.deps](core.deps.md) workflow. Dependabot
 **alerts** stay on (they feed the Security tab and Renovate's security pull requests), but there is no
-`dependabot.yml` any more.
+`dependabot.yml` and no Dependabot pull request any more.
 
 ## Using it
 
@@ -63,14 +63,15 @@ and its caller sets `deps_subject_prefix = "^[deps]"` in Terraform, as before.
 
 ## Security
 
-- **Alerts** (`vulnerability_alerts`) and **Dependabot security updates** are still enabled by Terraform
-  (`security_features`), so the Security tab keeps listing the advisories. Renovate does not create alerts, it
-  reads them.
+- **Alerts** (`vulnerability_alerts`) stay enabled by Terraform: they feed the Security tab (the board) and
+  Renovate's security pull requests. Renovate does not create alerts, it reads them.
+- **Dependabot security updates** are **off** by default (`security_features` no longer contains
+  `"dependabot"`): they only open pull requests, which are Renovate's job now, and would double every
+  security pull request. The alerts do not depend on them.
 - Renovate opens a pull request for each alert it can fix, labelled `type::security`, merged by
   [core.deps](core.deps.md) at any semver level.
-- While Dependabot security updates are enabled, an alert can get a Dependabot pull request **and** a
-  Renovate one. Remove `"dependabot"` from `security_features` of a repository to leave it to Renovate.
-- Scanning: CodeQL ([core.scan](core.scan.md)) and the repository's own audit ([security.audit](security.audit.md)).
+- Scanning: CodeQL ([core.scan](core.scan.md)), the repository's own audit ([security.audit](security.audit.md))
+  and OSV-Scanner with code-scanning upload ([security.osv](security.osv.md)).
 
 ## Manual steps
 

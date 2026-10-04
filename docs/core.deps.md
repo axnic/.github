@@ -10,8 +10,8 @@ Auto-merge of the dependency bots' own pull requests. The caller must trigger it
 
 ### `auto-merge` - Dependabot
 
-Dependabot only opens security updates once `dependabot.yml` is gone (Dependabot alerts and security
-updates stay enabled, see [Renovate](Renovate.md)).
+Dependabot security updates are disabled by Terraform and `dependabot.yml` is being removed (see
+[Renovate](Renovate.md)): this job only serves the repositories not migrated yet, and can go once they all are.
 
 1. Reads the update's semver level and any associated GHSA advisory (`dependabot/fetch-metadata`).
 2. For **patch** updates, or a **security** update at any semver level, approves the pull request and
@@ -112,5 +112,3 @@ jobs:
   (made through the GitHub API, hence signed) must follow the convention, which checks the preset.
 - The marker is written by the preset; a repository that adds its own grouping rules must not mix majors
   or 0.x minors into a group that carries it.
-- Both bots can open a pull request for the same security alert while Dependabot security updates are
-  enabled on the repository (`security_features` contains `dependabot`).

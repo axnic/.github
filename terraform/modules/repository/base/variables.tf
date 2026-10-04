@@ -85,10 +85,12 @@ variable "features" {
 #   "vulnerability_alerts"                  — Dependabot alerts (all repos). Renovate reads them to
 #                                             open its security pull requests: keep them enabled.
 #   "dependabot"                            — Dependabot security updates (PRs opened from the
-#                                             alerts, no dependabot.yml needed). Version updates are
-#                                             Renovate's (axnic/.github, default.json). While enabled,
-#                                             Dependabot and Renovate may both open a PR for the same
-#                                             alert; drop "dependabot" here to leave it to Renovate.
+#                                             alerts, no dependabot.yml needed). Off by default: pull
+#                                             requests for updates and for alerts are Renovate's
+#                                             (axnic/.github, default.json), which reads the alerts.
+#                                             Enabling it gives an alert a Dependabot PR AND a
+#                                             Renovate one. The alerts themselves ("vulnerability_alerts")
+#                                             feed the Security tab and must stay on.
 #
 # The security_and_analysis block (code_security, secret_scanning and variants)
 # is only emitted for public repos — these features are free there and GHAS is
@@ -98,7 +100,7 @@ variable "features" {
 variable "security_features" {
   type        = list(string)
   description = "Security features to enable. See variable comment for valid values and constraints."
-  default     = ["vulnerability_alerts", "dependabot"]
+  default     = ["vulnerability_alerts"]
 
   validation {
     condition = length([
