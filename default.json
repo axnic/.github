@@ -2,7 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": [
     "axnic default Renovate preset. Consume it with { \"extends\": [\"local>axnic/.github:default\"] }.",
-    "Every minor and patch update (0.x included, the CI tells if it breaks) is grouped per manager, and so is every major in a separate group: at most two pull requests per manager.",
+    "Every minor and patch update (0.x included, the CI tells if it breaks) is grouped per manager, and every major gets its own pull request.",
     "Commit subjects follow the organisation convention: build(deps): Sentence-case subject.",
     "Security settings (release age, vulnerability alerts) live in the security preset."
   ],
@@ -78,28 +78,9 @@
       "allowedVersions": "/^\\d*[02468]\\./"
     },
     {
-      "description": "Majors: one pull request per manager, separate from the minor and patch one, so a breaking change never blocks the routine updates.",
-      "matchManagers": ["gomod"],
+      "description": "Majors are never grouped: one pull request per dependency, so a breaking change is reviewed alone.",
       "matchUpdateTypes": ["major"],
-      "groupName": "go major updates",
-      "dependencyDashboardApproval": false
-    },
-    {
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "npm major updates",
-      "dependencyDashboardApproval": false
-    },
-    {
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "github actions major updates",
-      "dependencyDashboardApproval": false
-    },
-    {
-      "matchManagers": ["mise"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "mise tools major updates",
+      "groupName": null,
       "dependencyDashboardApproval": false
     }
   ]

@@ -21,7 +21,7 @@ App must be installed on the repository (see [Manual steps](#manual-steps)).
 | Rule                               | Result                                                                                   |
 | ---------------------------------- | ---------------------------------------------------------------------------------------- |
 | Minor and patch (0.x included)     | One grouped pull request per manager (go, npm, github actions, mise)                     |
-| Major                              | One grouped pull request per manager, apart from the minor/patch one, never auto-merged  |
+| Major                              | One pull request per dependency, never grouped, never auto-merged                        |
 | GitHub Actions                     | Pinned by digest (`helpers:pinGitHubActionDigests`)                                      |
 | Managers                           | `gomod`, `github-actions`, `npm`, `mise` (only where the files exist), `custom.regex`    |
 | Release age                        | `minimumReleaseAge: 3 days` (security preset): a release settles before it is proposed   |
