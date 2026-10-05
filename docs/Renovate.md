@@ -20,10 +20,8 @@ App must be installed on the repository (see [Manual steps](#manual-steps)).
 
 | Rule                               | Result                                                                                   |
 | ---------------------------------- | ---------------------------------------------------------------------------------------- |
-| Minor and patch, versions from 1.0 | One grouped pull request per manager (go, npm, github actions, mise)                     |
-| Minor of a 0.x version             | One pull request per dependency (a 0.x minor may break)                                  |
-| Patch of a 0.x version             | Grouped per manager                                                                      |
-| Major                              | One pull request per dependency, never grouped, never auto-merged                        |
+| Minor and patch (0.x included)     | One grouped pull request per manager (go, npm, github actions, mise)                     |
+| Major                              | One grouped pull request per manager, apart from the minor/patch one, never auto-merged  |
 | GitHub Actions                     | Pinned by digest (`helpers:pinGitHubActionDigests`)                                      |
 | Managers                           | `gomod`, `github-actions`, `npm`, `mise` (only where the files exist), `custom.regex`    |
 | Release age                        | `minimumReleaseAge: 3 days` (security preset): a release settles before it is proposed   |
@@ -42,7 +40,6 @@ pinned in `.pulumi.version`) and a `pulumi provider tooling` group (`pulumi-go-p
 SDKs (`sdk/`) nor the provider's own Go SDK required by `examples/go` through a `replace` directive, and
 disables major and minor updates of Python and .NET (the floor of the generated SDKs).
 
-Go modules are `v`-prefixed, so the 0.x test is `/^[\^~=v ]*0\./` (a plain `/^0\./` never matches `v0.5.1`).
 Indirect Go requirements are kept enabled, as Dependabot did; the go group then carries many lookups,
 disable them with a `matchDepTypes: ["indirect"]` rule if the noise is not worth it.
 

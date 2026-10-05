@@ -2,7 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": [
     "axnic default Renovate preset. Consume it with { \"extends\": [\"local>axnic/.github:default\"] }.",
-    "Minor and patch updates of versions >= 1.0 are grouped per manager; every minor of a 0.x version (breaking by semver convention) and every major gets its own pull request; patches of 0.x versions are grouped.",
+    "Every minor and patch update (0.x included, the CI tells if it breaks) is grouped per manager, and so is every major in a separate group: at most two pull requests per manager.",
     "Commit subjects follow the organisation convention: build(deps): Sentence-case subject.",
     "Security settings (release age, vulnerability alerts) live in the security preset."
   ],
@@ -47,46 +47,23 @@
     {
       "description": "Minor and patch updates of versions >= 1.0: one pull request per manager.",
       "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
       "groupName": "go minor and patch dependencies"
     },
     {
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch"],
-      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
       "groupName": "npm minor and patch dependencies"
     },
     {
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
-      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
       "groupName": "github actions minor and patch updates"
     },
     {
       "matchManagers": ["mise"],
       "matchUpdateTypes": ["minor", "patch"],
-      "matchCurrentVersion": "!/^[\\^~=v ]*0\\./",
       "groupName": "mise tools minor and patch updates"
-    },
-    {
-      "description": "Patches of 0.x versions are grouped (minors of 0.x versions stay separate: no group matches them).",
-      "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["patch"],
-      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
-      "groupName": "go 0.x patch dependencies"
-    },
-    {
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["patch"],
-      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
-      "groupName": "npm 0.x patch dependencies"
-    },
-    {
-      "matchManagers": ["mise"],
-      "matchUpdateTypes": ["patch"],
-      "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
-      "groupName": "mise tools 0.x patch updates"
     },
     {
       "description": "The Go language version (go directive) changes the CI toolchain (mise reads it): keep it out of the library group so a Go bump is reviewed on its own.",
@@ -101,9 +78,28 @@
       "allowedVersions": "/^\\d*[02468]\\./"
     },
     {
-      "description": "Majors are never grouped.",
+      "description": "Majors: one pull request per manager, separate from the minor and patch one, so a breaking change never blocks the routine updates.",
+      "matchManagers": ["gomod"],
       "matchUpdateTypes": ["major"],
-      "groupName": null,
+      "groupName": "go major updates",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "npm major updates",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "github actions major updates",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "mise tools major updates",
       "dependencyDashboardApproval": false
     }
   ]
