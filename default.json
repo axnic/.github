@@ -3,9 +3,14 @@
   "description": [
     "axnic default Renovate preset. Consume it with { \"extends\": [\"local>axnic/.github:default\"] }.",
     "Minor and patch updates of versions >= 1.0 are grouped per manager; every minor of a 0.x version (breaking by semver convention) and every major gets its own pull request; patches of 0.x versions are grouped.",
-    "Commit subjects follow the organisation convention: build(deps): Sentence-case subject."
+    "Commit subjects follow the organisation convention: build(deps): Sentence-case subject.",
+    "Security settings (release age, vulnerability alerts) live in the security preset."
   ],
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "local>axnic/.github:security"
+  ],
   "enabledManagers": ["gomod", "github-actions", "npm", "mise", "custom.regex"],
   "timezone": "Europe/Paris",
   "schedule": ["before 6am on monday"],
@@ -20,10 +25,6 @@
   "semanticCommitType": "build",
   "semanticCommitScope": "deps",
   "commitMessageLowerCase": "never",
-  "vulnerabilityAlerts": {
-    "enabled": true,
-    "labels": ["type::security"]
-  },
   "packageRules": [
     {
       "description": "Force the commit type and scope: presets of config:recommended set 'fix' or 'chore' for some dependency kinds, which commitlint's scope-enum and the organisation convention do not accept.",
@@ -86,6 +87,18 @@
       "matchUpdateTypes": ["patch"],
       "matchCurrentVersion": "/^[\\^~=v ]*0\\./",
       "groupName": "mise tools 0.x patch updates"
+    },
+    {
+      "description": "The Go language version (go directive) changes the CI toolchain (mise reads it): keep it out of the library group so a Go bump is reviewed on its own.",
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["go"],
+      "groupName": "go toolchain"
+    },
+    {
+      "description": "Node: only even majors (LTS); odd releases are short-lived and never worth a pull request.",
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["node"],
+      "allowedVersions": "/^\\d*[02468]\\./"
     },
     {
       "description": "Majors are never grouped.",

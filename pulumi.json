@@ -24,6 +24,13 @@
       "enabled": false
     },
     {
+      "description": "Python and .NET are the floor supported by the generated SDKs: patches only, a minor or major bump is a deliberate decision.",
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["python", "dotnet"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
       "description": "The Pulumi engine and SDKs move together: Go sdk/pkg, the npm SDK and the CLI pinned in .pulumi.version.",
       "matchPackageNames": [
         "pulumi/pulumi",

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "axnic Renovate preset for everything security-related. Extended by the default preset, so every repository gets it.",
+    "A release has to settle for 3 days before it is proposed (yanked or broken releases, typosquatting and supply-chain takeovers are usually caught within that time).",
+    "Fixes for a Dependabot alert skip that delay: they are opened at once, any time, and labelled type::security."
+  ],
+  "minimumReleaseAge": "3 days",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "minimumReleaseAge": null,
+    "labels": ["type::security"]
+  }
+}

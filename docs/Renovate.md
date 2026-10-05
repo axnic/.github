@@ -1,6 +1,6 @@
 # Renovate
 
-Dependency updates of the organisation are opened by **Renovate**, configured by two shared presets
+Dependency updates of the organisation are opened by **Renovate**, configured by shared presets
 at the root of this repository. Merging is not automated by a workflow. Dependabot
 **alerts** stay on (they feed the Security tab and Renovate's security pull requests), but there is no
 `dependabot.yml` and no Dependabot pull request any more.
@@ -26,14 +26,21 @@ App must be installed on the repository (see [Manual steps](#manual-steps)).
 | Major                              | One pull request per dependency, never grouped, never auto-merged                        |
 | GitHub Actions                     | Pinned by digest (`helpers:pinGitHubActionDigests`)                                      |
 | Managers                           | `gomod`, `github-actions`, `npm`, `mise` (only where the files exist), `custom.regex`    |
-| Security                           | `vulnerabilityAlerts`: one pull request per Dependabot alert, any time, `type::security` |
+| Release age                        | `minimumReleaseAge: 3 days` (security preset): a release settles before it is proposed   |
+| Security                           | `vulnerabilityAlerts`: one pull request per Dependabot alert, any time, no release delay, `type::security` |
+| Go language version                | `go` directive in its own `go toolchain` group, apart from the library group             |
+| Node (mise)                        | Even majors only (LTS)                                                                   |
 | Schedule                           | Mondays before 6am (Europe/Paris)                                                        |
 | Commits                            | `build(deps): Update dependency x to v1.2.3`, created through the GitHub API (signed)    |
+
+The `security` preset (`security.json`, extended by `default`) holds every security-related setting: the
+release age and `vulnerabilityAlerts`. Put new security rules there.
 
 The `pulumi` preset adds a `pulumi sdk` group (Pulumi `sdk`/`pkg` modules, `@pulumi/pulumi` and the CLI
 pinned in `.pulumi.version`) and a `pulumi provider tooling` group (`pulumi-go-provider`,
 `providertest`, ...), both only for minor and patch updates from 1.0 on. It never updates the generated
-SDKs (`sdk/`) nor the provider's own Go SDK required by `examples/go` through a `replace` directive.
+SDKs (`sdk/`) nor the provider's own Go SDK required by `examples/go` through a `replace` directive, and
+disables major and minor updates of Python and .NET (the floor of the generated SDKs).
 
 Go modules are `v`-prefixed, so the 0.x test is `/^[\^~=v ]*0\./` (a plain `/^0\./` never matches `v0.5.1`).
 Indirect Go requirements are kept enabled, as Dependabot did; the go group then carries many lookups,
@@ -65,7 +72,8 @@ A repository's own `renovate.json` is merged after the preset. For example, rtun
 - **Dependabot security updates** are **off** by default (`security_features` no longer contains
   `"dependabot"`): they only open pull requests, which are Renovate's job now, and would double every
   security pull request. The alerts do not depend on them.
-- Renovate opens a pull request for each alert it can fix, labelled `type::security`.
+- Renovate opens a pull request for each alert it can fix, labelled `type::security`, without waiting for
+  the 3-day release age that applies to ordinary updates.
 - Scanning: CodeQL ([core.scan](core.scan.md)), the repository's own audit ([security.audit](security.audit.md))
   and OSV-Scanner with code-scanning upload ([security.osv](security.osv.md)).
 
