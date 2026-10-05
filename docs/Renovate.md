@@ -40,8 +40,9 @@ pinned in `.pulumi.version`) and a `pulumi provider tooling` group (`pulumi-go-p
 SDKs (`sdk/`) nor the provider's own Go SDK required by `examples/go` through a `replace` directive, and
 disables major and minor updates of Python and .NET (the floor of the generated SDKs).
 
-Indirect Go requirements are kept enabled, as Dependabot did; the go group then carries many lookups,
-disable them with a `matchDepTypes: ["indirect"]` rule if the noise is not worth it.
+Indirect Go requirements are kept enabled, as Dependabot did (they matter for security fixes), except for
+major updates: a major is another module path that the direct dependencies do not import, so bumping it
+alone leaves `go.mod` inconsistent and breaks the build. The direct dependency that needs it moves first.
 
 ### Merging
 

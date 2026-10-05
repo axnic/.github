@@ -78,6 +78,13 @@
       "allowedVersions": "/^\\d*[02468]\\./"
     },
     {
+      "description": "Never bump an indirect Go requirement to a new major: a major is another module path, which the direct dependencies that need it do not import, so go.mod ends up inconsistent and the build breaks. The direct dependency that requires it moves first.",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "Majors are never grouped: one pull request per dependency, so a breaking change is reviewed alone.",
       "matchUpdateTypes": ["major"],
       "groupName": null,
