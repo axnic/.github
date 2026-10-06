@@ -78,8 +78,8 @@ permissions: {}
 jobs:
   sync:
     name: 🔄 Sync E2E callers
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/e2e.sync.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/e2e.sync.yaml@<commit-sha> # main
     with:
       commit-subject: ci(ci): Sync E2E callers
     secrets: inherit

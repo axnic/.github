@@ -109,7 +109,7 @@ Go release (signature and attestation):
 ```sh
 cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github\.com/axnic/\.github/\.github/workflows/go\.publish\.yaml@refs/heads/main$' \
+  --certificate-identity-regexp '^https://github\.com/axnic/\.github/\.github/workflows/go\.publish\.yaml@(refs/heads/main|[0-9a-f]{40})$' \
   --certificate-github-workflow-repository <owner>/<repo>
 sha256sum --ignore-missing -c checksums.txt            # shasum -a 256 -c on macOS
 gh attestation verify <file> -R <owner>/<repo> \
@@ -124,8 +124,8 @@ gh attestation verify <file> -R <owner>/<repo> \
 ```
 
 Without `--signer-workflow`, `gh attestation verify -R` fails for artifacts built by a reusable workflow,
-because it expects the signer to be in the repository itself. The identity pins `refs/heads/main`
-because callers use `@main`.
+because it expects the signer to be in the repository itself. The identity ends with the commit the caller pins
+(`@<commit-sha>`), or `refs/heads/main` for releases made before the callers were pinned.
 
 ## Prerequisites for publishing
 
@@ -178,7 +178,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-    uses: axnic/.github/.github/workflows/release.prepare.yaml@main
+    uses: axnic/.github/.github/workflows/release.prepare.yaml@<commit-sha> # main
     with:
       bump: ${{ inputs.bump }}
       version: ${{ inputs.version }}
@@ -190,7 +190,7 @@ jobs:
       contents: write
       id-token: write
       attestations: write
-    uses: axnic/.github/.github/workflows/go.publish.yaml@main # or pulumi.publish.yaml
+    uses: axnic/.github/.github/workflows/go.publish.yaml@<commit-sha> # main # or pulumi.publish.yaml
     with:
       tag: ${{ needs.prepare.outputs.tag }}
       version: ${{ needs.prepare.outputs.version }}

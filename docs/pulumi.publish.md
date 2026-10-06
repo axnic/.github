@@ -71,7 +71,7 @@ The `publish` job of the release caller (full file in [Releases](Releases.md)):
       contents: write
       id-token: write
       attestations: write
-    uses: axnic/.github/.github/workflows/pulumi.publish.yaml@main
+    uses: axnic/.github/.github/workflows/pulumi.publish.yaml@<commit-sha> # main
     with:
       tag: ${{ needs.prepare.outputs.tag }}
       version: ${{ needs.prepare.outputs.version }}

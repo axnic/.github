@@ -64,16 +64,40 @@ locals {
         default_branch = var.default_branch
         settings       = local.s
         y              = local.y
+        central        = local.central
         publish        = local.publish
         caller         = "${join(",", sort(c.triggers))}.${c.action}.yaml"
       })))}\n"
     })
   }
 
+  # Central workflows the callers point at: one entry per catalog workflow, plus the publish
+  # workflow the release caller calls.
+  central_workflows = toset(concat(
+    local.selected,
+    contains(local.selected, "release.prepare") ? ["${local.publish}.publish"] : [],
+  ))
+
+  # `uses:` is pinned to the commit that last changed the called workflow (not to the head of
+  # main): a caller only changes when its workflow does, instead of every caller of every
+  # repository on every push to axnic/.github.
+  central = { for k, f in data.github_repository_file.central : k => f.commit_sha }
+
   # Every required task with the group that requires it.
   required_tasks = distinct(flatten([
     for c in values(local.callers) : [for t in c.tasks : { task = t, group = c.group }]
   ]))
+}
+
+# ── Central workflows (pinned by the callers) ─────────────────────────────────
+# commit_sha is the last commit that changed the file, so the pinned workflow is exactly the
+# current one.
+data "github_repository_file" "central" {
+  for_each = local.central_workflows
+
+  repository = ".github"
+  branch     = "main"
+  file       = ".github/workflows/${each.key}.yaml"
 }
 
 # ── Mise-task guard ─────────────────────────────────────────────────────────────

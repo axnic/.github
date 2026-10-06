@@ -58,8 +58,8 @@ permissions: {}
 jobs:
   scan:
     name: 🧬 CodeQL
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/core.scan.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/core.scan.yaml@<commit-sha> # main
     with:
       languages: '["go"]'
     secrets: inherit

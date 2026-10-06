@@ -45,8 +45,8 @@ permissions: {}
 jobs:
   audit:
     name: 📦 Dependency Audit
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/security.audit.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/security.audit.yaml@<commit-sha> # main
     secrets: inherit
     permissions:
       contents: read

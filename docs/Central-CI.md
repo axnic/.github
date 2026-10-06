@@ -17,8 +17,8 @@ declares the triggers, grants the permissions, and calls one central workflow:
 ```yaml
 jobs:
   qa:
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/core.qa.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/core.qa.yaml@<commit-sha> # main
     secrets: inherit
     permissions:
       contents: read

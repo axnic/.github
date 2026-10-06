@@ -58,8 +58,8 @@ permissions: {}
 jobs:
   e2e:
     name: 🧪 E2E (v2.3.0)
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/e2e.run.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/e2e.run.yaml@<commit-sha> # main
     with:
       version: v2.3.0
     secrets: inherit

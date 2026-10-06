@@ -67,8 +67,8 @@ permissions: {}
 jobs:
   test:
     name: 🧪 Go
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/go.test.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/go.test.yaml@<commit-sha> # main
     secrets: inherit
     permissions:
       contents: read

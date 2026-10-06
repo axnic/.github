@@ -69,7 +69,7 @@ See [Releases](Releases.md#example-caller) for the full release caller. The `pre
     permissions:
       contents: write
       pull-requests: read
-    uses: axnic/.github/.github/workflows/release.prepare.yaml@main
+    uses: axnic/.github/.github/workflows/release.prepare.yaml@<commit-sha> # main
     with:
       bump: ${{ inputs.bump }}
       version: ${{ inputs.version }}

@@ -53,8 +53,8 @@ permissions: {}
 jobs:
   codegen:
     name: 🧩 Codegen Check
-    # Intentionally not pinned: follows the latest axnic/.github (owner-controlled repo).
-    uses: axnic/.github/.github/workflows/pulumi.codegen.yaml@main
+    # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
+    uses: axnic/.github/.github/workflows/pulumi.codegen.yaml@<commit-sha> # main
     secrets: inherit
     permissions:
       contents: read

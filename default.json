@@ -33,7 +33,7 @@
       "semanticCommitScope": "deps"
     },
     {
-      "description": "Never pin nor update the organisation's own reusable workflows and actions (axnic/.github, axnic/rtunk): the generated callers follow @main on purpose and Terraform rewrites them, so a pin would be reverted and would freeze the caller on an old version.",
+      "description": "Never let Renovate pin or update the organisation's own reusable workflows and actions (axnic/.github, axnic/rtunk): Terraform pins the generated callers to the commit of the called workflow and rewrites them, so a Renovate bump would be reverted.",
       "matchManagers": ["github-actions"],
       "matchPackageNames": ["axnic/**"],
       "enabled": false

@@ -5,6 +5,8 @@
 mock_provider "github" {
   mock_data "github_repository_file" {
     defaults = {
+      # Also the mock of the central workflows read for the pins in the callers.
+      commit_sha = "0123456789abcdef0123456789abcdef01234567"
       content = <<-TOML
         [tasks."ci:commitlint"]
         run = "commitlint"
@@ -52,7 +54,7 @@ run "core_naming" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].content, "uses: axnic/.github/.github/workflows/core.qa.yaml@main\n    secrets: inherit\n    permissions:\n      contents: read\n")
+    condition     = strcontains(github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].content, "uses: axnic/.github/.github/workflows/core.qa.yaml@0123456789abcdef0123456789abcdef01234567 # main\n    secrets: inherit\n    permissions:\n      contents: read\n")
     error_message = "qa caller must call core.qa with secrets: inherit and contents: read"
   }
 
@@ -92,7 +94,7 @@ run "pulumi_includes_go" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/pulumi.publish.yaml@main")
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/pulumi.publish.yaml@0123456789abcdef0123456789abcdef01234567 # main")
     error_message = "release of a pulumi repo must publish with pulumi.publish"
   }
 
@@ -111,7 +113,7 @@ run "release_go" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/go.publish.yaml@main")
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/go.publish.yaml@0123456789abcdef0123456789abcdef01234567 # main")
     error_message = "release must default to go.publish"
   }
 
@@ -249,7 +251,7 @@ run "release_shape" {
       for s in [
         "  workflow_dispatch:\n    inputs:\n      bump:\n",
         "      version:\n",
-        "uses: axnic/.github/.github/workflows/release.prepare.yaml@main",
+        "uses: axnic/.github/.github/workflows/release.prepare.yaml@0123456789abcdef0123456789abcdef01234567 # main",
         "    needs: prepare\n",
         "      bump: \"$${{ inputs.bump }}\"\n",
         "  prepare:\n",
@@ -274,7 +276,7 @@ run "release_pulumi_sdks" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/pulumi.publish.yaml@main") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "sdks: \"[\\\"nodejs\\\"]\"") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "publish — build and publish the GitHub Release (out of draft), from pulumi.publish")
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/pulumi.publish.yaml@0123456789abcdef0123456789abcdef01234567 # main") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "sdks: \"[\\\"nodejs\\\"]\"") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "publish — build and publish the GitHub Release (out of draft), from pulumi.publish")
     error_message = "pulumi.publish must receive sdks"
   }
 }
@@ -310,7 +312,7 @@ run "e2e_sync" {
         "name: E2E Sync\n",
         "    - cron: 0 3 * * 1\n",
         "  workflow_dispatch: {}\n",
-        "uses: axnic/.github/.github/workflows/e2e.sync.yaml@main",
+        "uses: axnic/.github/.github/workflows/e2e.sync.yaml@0123456789abcdef0123456789abcdef01234567 # main",
         "  # sync — add/remove the per-version E2E callers",
       ] : strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, s)
     ])
@@ -514,7 +516,7 @@ run "osv_caller" {
   }
 
   assert {
-    condition     = contains(output.files, "pull_request,push,schedule.osv.yaml") && strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "cron: 15 4 * * 2") && strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "security.osv.yaml@main")
+    condition     = contains(output.files, "pull_request,push,schedule.osv.yaml") && strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "cron: 15 4 * * 2") && strcontains(github_repository_file.caller["pull_request,push,schedule.osv.yaml"].content, "security.osv.yaml@0123456789abcdef0123456789abcdef01234567 # main")
     error_message = "the OSV caller must use osv_cron and call security.osv: ${jsonencode(output.files)}"
   }
 }
@@ -658,5 +660,18 @@ run "yaml_scalars_quoted_special" {
   assert {
     condition     = strcontains(github_repository_file.caller["pull_request_target.welcome.yaml"].content, "message: \"feat: x # y\"\n")
     error_message = "a string with ': ' or ' #' must stay quoted"
+  }
+}
+
+run "callers_pin_central_workflows_to_a_commit" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].content, "core.qa.yaml@0123456789abcdef0123456789abcdef01234567 # main") && !strcontains(github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].content, "@main\n")
+    error_message = "the caller must pin the central workflow to the commit that last changed it, not to @main"
   }
 }
