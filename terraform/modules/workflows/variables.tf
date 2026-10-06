@@ -121,10 +121,10 @@ variable "custom_workflows" {
 # ── Release ───────────────────────────────────────────────────────────────────
 
 # Which central workflow builds and publishes the release (second job of the
-# release caller). null = "pulumi" when the pulumi group is enabled, else "go".
+# release caller; for "pulumi" the jobs are generated into the caller itself). null = "pulumi" when the pulumi group is enabled, else "go".
 variable "publish" {
   type        = string
-  description = "Publish job of the release caller: \"go\" (go.publish) or \"pulumi\" (pulumi.publish). null = derived from the groups."
+  description = "Publish part of the release caller: \"go\" (calls go.publish) or \"pulumi\" (publish jobs generated into the caller). null = derived from the groups."
   default     = null
 
   validation {
@@ -167,7 +167,7 @@ variable "settings" {
     # oss.scorecard / oss.welcome
     scorecard_cron  = optional(string, "0 5 * * 1")
     welcome_message = optional(string) # input `message`
-    # pulumi.publish
+    # pulumi publish jobs (generated into the release caller)
     pulumi_sdks = optional(list(string)) # input `sdks`
     # e2e.sync
     e2e_sync_cron      = optional(string, "0 3 * * 1") # Monday 03:00 UTC

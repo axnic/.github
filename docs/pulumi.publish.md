@@ -1,9 +1,14 @@
 # pulumi.publish - Release publish for Pulumi (stage 2 of 2)
 
-Group `pulumi`. Central workflow: `.github/workflows/pulumi.publish.yaml`. Second job of the release
-caller of a Pulumi provider repository (`needs: prepare`); it replaces [go.publish](go.publish.md) in
-that caller and takes `sdks` instead of `prerelease`. See [Releases](Releases.md). The provider name
-comes from the repository name (`pulumi-<name>`); nothing is specific to one provider.
+Group `pulumi`. **Not a reusable workflow**: these jobs are generated into the release caller of a Pulumi
+provider repository (`workflow_dispatch.release.yaml`, from `.github/workflows/templates/release/pulumi-publish-jobs.yaml.tftpl`),
+after `prepare`; they replace [go.publish](go.publish.md) in that caller. See [Releases](Releases.md). The
+provider name comes from the repository name (`pulumi-<name>`); nothing is specific to one provider.
+
+**Why in the caller**: npm and NuGet trusted publishing match the workflow that runs the job. From a
+reusable workflow of this repository the token names `axnic/.github/.github/workflows/...`, which a policy of
+the provider repository cannot match (NuGet answers HTTP 401). In the caller, the token names the
+repository's own `workflow_dispatch.release.yaml`.
 
 ## Purpose
 
@@ -17,25 +22,21 @@ Works on the tag and draft release that [release.prepare](release.prepare.md) cr
 | `python`   | `make python_sdk`, then twine (`--skip-existing`) with `PYPI_API_TOKEN`; skipped when the secret is missing.                                                                                    |
 | `dotnet`   | `make dotnet_sdk`, then `dotnet nuget push --skip-duplicate`. Trusted publishing through `NuGet/login` when `NUGET_USER` is set, else `NUGET_API_KEY`; skipped when neither is set.              |
 
-Each SDK job runs only when listed in `sdks` and is its own job, so a failed registry can be re-run
+Each SDK job is generated only when listed in `settings.pulumi_sdks` and is its own job, so a failed registry can be re-run
 alone ("Re-run failed jobs"); every step is idempotent.
 
 Releases go public **without review**: the notes (whose summary paragraph an LLM wrote from the commit log
 and the pull request descriptions) are published as is.
 
-## When it runs
+## Settings
 
-As the `publish` job of the release caller `workflow_dispatch.release.yaml`.
-
-## Inputs
-
-| Input     | Type   | Default                           | Notes                                              |
-| --------- | ------ | --------------------------------- | -------------------------------------------------- |
-| `tag`     | string | -                                 | **Required.** The tag pushed by `release.prepare`.  |
-| `version` | string | -                                 | **Required.** The version without `v` (`PROVIDER_VERSION` of the Makefile). |
-| `sdks`    | string | `["nodejs","python","dotnet"]`    | JSON array of the SDKs to publish.                  |
+| Setting (`settings`) | Default                        | Notes                                                       |
+| -------------------- | ------------------------------ | ----------------------------------------------------------- |
+| `pulumi_sdks`        | `["nodejs","python","dotnet"]` | The SDK jobs that are generated (`provider` and `go-sdk` always). |
 
 ## Secrets (all optional)
+
+Read from the repository's (or the organisation's) secrets by the jobs themselves.
 
 | Secret           | Used for                                                       |
 | ---------------- | -------------------------------------------------------------- |
@@ -44,9 +45,10 @@ As the `publish` job of the release caller `workflow_dispatch.release.yaml`.
 | `NUGET_USER`     | nuget.org user of the trusted publishing policy (OIDC).        |
 | `NUGET_API_KEY`  | NuGet fallback when `NUGET_USER` is not set.                   |
 
-## Permissions (granted by the caller)
+## Permissions
 
-`contents: write`, `id-token: write`, `attestations: write`
+Each job declares its own: `contents: write` (provider, go-sdk), `id-token: write` (provider, nodejs,
+dotnet), `attestations: write` (provider).
 
 ## Required mise tasks
 
@@ -56,34 +58,15 @@ exception to "call `mise run`"); tools go, pulumi, pulumictl, node, yarn, python
 ## Verification
 
 ```sh
-gh attestation verify <file> -R <owner>/<repo> \
-  --signer-workflow axnic/.github/.github/workflows/pulumi.publish.yaml
+gh attestation verify <file> -R <owner>/<repo>
 ```
 
-## Example caller
-
-The `publish` job of the release caller (full file in [Releases](Releases.md)):
-
-```yaml
-  publish:
-    needs: prepare
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    uses: axnic/.github/.github/workflows/pulumi.publish.yaml@<commit-sha> # main
-    with:
-      tag: ${{ needs.prepare.outputs.tag }}
-      version: ${{ needs.prepare.outputs.version }}
-      sdks: '["nodejs","python","dotnet"]'
-    secrets: inherit
-```
+The signer is the repository's own release caller, so no `--signer-workflow` is needed.
 
 ## Known limitations
 
-- Trusted publishing from a reusable workflow is unverified: whether npm and NuGet match the caller file
-  or the central workflow is settled by the first real release, and the registry policies may need
-  adjusting.
+- The npm and NuGet trusted publishing policies must name the repository's own release caller
+  (repository `<owner>/<repo>`, workflow file `workflow_dispatch.release.yaml`).
 - npm needs npm >= 11.15.0 for `npm stage` (the job updates npm itself); the job succeeds once the version is staged, the release is complete only after the approval (the job summary says how). The "already staged" check is best effort: `npm stage list` may need a login.
 - The Pulumi release is published (not left as a draft) by design, so there is no manual review of the notes.
 - The upload filter covers the goreleaser artifact types Archive, Checksum, Signature, Certificate and

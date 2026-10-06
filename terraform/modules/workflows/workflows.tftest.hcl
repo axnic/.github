@@ -7,7 +7,7 @@ mock_provider "github" {
     defaults = {
       # Also the mock of the central workflows read for the pins in the callers.
       commit_sha = "0123456789abcdef0123456789abcdef01234567"
-      content = <<-TOML
+      content    = <<-TOML
         [tasks."ci:commitlint"]
         run = "commitlint"
         [tasks."ci:build"]
@@ -94,8 +94,8 @@ run "pulumi_includes_go" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/pulumi.publish.yaml@0123456789abcdef0123456789abcdef01234567 # main")
-    error_message = "release of a pulumi repo must publish with pulumi.publish"
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  nodejs:\n    name: 📦 Node.js SDK (npm)\n    needs: [prepare, provider]") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  dotnet:\n") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  python:\n") && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "pulumi.publish.yaml")
+    error_message = "release of a pulumi repo must carry its publish jobs itself (npm and NuGet trusted publishing need the repository's own workflow), not call pulumi.publish"
   }
 
   assert {
@@ -265,7 +265,7 @@ run "release_shape" {
   }
 }
 
-# 13) Explicit publish = pulumi without the pulumi group: sdks reach pulumi.publish.
+# 13) Explicit publish = pulumi without the pulumi group: only the listed SDKs get a publish job.
 run "release_pulumi_sdks" {
   command = plan
 
@@ -276,8 +276,14 @@ run "release_pulumi_sdks" {
   }
 
   assert {
-    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "uses: axnic/.github/.github/workflows/pulumi.publish.yaml@0123456789abcdef0123456789abcdef01234567 # main") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "sdks: \"[\\\"nodejs\\\"]\"") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "publish — build and publish the GitHub Release (out of draft), from pulumi.publish")
-    error_message = "pulumi.publish must receive sdks"
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  provider:\n") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  go-sdk:\n") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  nodejs:\n") && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  python:\n") && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  dotnet:\n")
+    error_message = "only the SDKs of settings.pulumi_sdks must get a publish job"
+  }
+
+  # The Terraform escapes must leave the GitHub expressions and the shell variables intact.
+  assert {
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "ref: refs/tags/$${{ needs.prepare.outputs.tag }}") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "SDK_TAG=\"$${SDK_DIR}/$${TAG}\"")
+    error_message = "expressions and shell variables of the publish jobs must be rendered verbatim"
   }
 }
 

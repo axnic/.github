@@ -23,6 +23,14 @@ locals {
     [for w in var.workflows : w.workflow],
   ))
 
+  # The Pulumi release publishes from the caller itself (not from a reusable workflow of
+  # axnic/.github): npm and NuGet trusted publishing match the workflow that runs the job,
+  # which must be the repository's own caller.
+  pulumi_sdks = local.s.pulumi_sdks != null ? local.s.pulumi_sdks : ["nodejs", "python", "dotnet"]
+  publish_jobs = local.publish == "pulumi" ? trimsuffix(templatefile("${path.module}/templates/release/pulumi-publish-jobs.yaml.tftpl", {
+    sdks = local.pulumi_sdks
+  }), "\n") : ""
+
   # ── Rendering ───────────────────────────────────────────────────────────────
   catalog_callers = [
     for k in local.selected : merge(local.catalog[k], {
@@ -65,17 +73,18 @@ locals {
         settings       = local.s
         y              = local.y
         central        = local.central
+        publish_jobs   = local.publish_jobs
         publish        = local.publish
         caller         = "${join(",", sort(c.triggers))}.${c.action}.yaml"
       })))}\n"
     })
   }
 
-  # Central workflows the callers point at: one entry per catalog workflow, plus the publish
-  # workflow the release caller calls.
+  # Central workflows the callers point at: one entry per catalog workflow, plus the go.publish
+  # workflow the release caller calls (the Pulumi release carries its publish jobs itself).
   central_workflows = toset(concat(
     local.selected,
-    contains(local.selected, "release.prepare") ? ["${local.publish}.publish"] : [],
+    contains(local.selected, "release.prepare") && local.publish != "pulumi" ? ["${local.publish}.publish"] : [],
   ))
 
   # `uses:` is pinned to the commit that last changed the called workflow (not to the head of

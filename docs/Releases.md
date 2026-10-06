@@ -69,13 +69,13 @@ SBOMs to the **draft** release, and records a SLSA build provenance attestation 
 the checksums. It fails if the configuration produces no signature or no SBOM. The draft stays a draft:
 **publishing it is a manual step**.
 
-### Pulumi providers ([pulumi.publish](pulumi.publish.md))
+### Pulumi providers ([pulumi.publish](pulumi.publish.md), jobs generated into the caller)
 
 | Job        | What it does                                                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `provider` | goreleaser build, archives and checksums attached to the draft, attestation, then the release is **published** (no longer a draft). |
 | `go-sdk`   | After `provider`: pushes the tag `sdk/go/<repository>/v<version>` on the release commit, so `go get` of the SDK resolves a clean version. Fails if `sdk/go/<repository>` does not exist. |
-| `nodejs`   | `make nodejs_sdk`, then `npm publish --provenance` (dist-tag `next` for a prerelease, `latest` otherwise).                    |
+| `nodejs`   | `make nodejs_sdk`, then `npm stage publish --provenance` (dist-tag `next` for a prerelease, `latest` otherwise); the version is only staged until a maintainer approves it with 2FA.                    |
 | `python`   | `make python_sdk`, then twine with `PYPI_API_TOKEN`. Skipped without the secret.                                             |
 | `dotnet`   | `make dotnet_sdk`, then `dotnet nuget push`. Skipped without credentials.                                                    |
 
@@ -116,11 +116,10 @@ gh attestation verify <file> -R <owner>/<repo> \
   --signer-workflow axnic/.github/.github/workflows/go.publish.yaml
 ```
 
-Pulumi provider archive (attestation only):
+Pulumi provider archive (attestation only; the publish jobs run in the repository's own release caller):
 
 ```sh
-gh attestation verify <file> -R <owner>/<repo> \
-  --signer-workflow axnic/.github/.github/workflows/pulumi.publish.yaml
+gh attestation verify <file> -R <owner>/<repo>
 ```
 
 Without `--signer-workflow`, `gh attestation verify -R` fails for artifacts built by a reusable workflow,
@@ -190,10 +189,10 @@ jobs:
       contents: write
       id-token: write
       attestations: write
-    uses: axnic/.github/.github/workflows/go.publish.yaml@<commit-sha> # main # or pulumi.publish.yaml
+    uses: axnic/.github/.github/workflows/go.publish.yaml@<commit-sha> # main
     with:
       tag: ${{ needs.prepare.outputs.tag }}
       version: ${{ needs.prepare.outputs.version }}
-      prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }} # go.publish only; pulumi.publish takes `sdks`
+      prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
     secrets: inherit
 ```

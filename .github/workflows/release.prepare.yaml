@@ -5,7 +5,7 @@
 # =============================================================================
 # Reusable workflow, first job of every repository's Release caller (workflow_dispatch). It
 # leaves a tag and a DRAFT GitHub Release with its notes; the second job of the same caller
-# (go.publish.yaml or pulumi.publish.yaml, `needs: prepare`) builds and attaches the artifacts.
+# (go.publish.yaml, or the publish jobs generated into the caller of a Pulumi provider, `needs: prepare`) builds and attaches the artifacts.
 # Both stages live in one caller on purpose: the tag is pushed with GITHUB_TOKEN, which never
 # triggers another workflow, so a tag push cannot start the publish stage. Pushing a tag by hand
 # publishes nothing: releases go through the dispatch.
