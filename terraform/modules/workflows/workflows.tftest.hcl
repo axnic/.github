@@ -250,6 +250,7 @@ run "release_shape" {
     condition = alltrue([
       for s in [
         "  workflow_dispatch:\n    inputs:\n      bump:\n",
+        "        default: auto\n        options:\n          - \"\"\n          - auto\n",
         "      version:\n",
         "uses: axnic/.github/.github/workflows/release.prepare.yaml@0123456789abcdef0123456789abcdef01234567 # main",
         "    needs: prepare\n",

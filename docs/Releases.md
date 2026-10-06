@@ -18,7 +18,7 @@ exactly one of two inputs:
 
 | Input     | Meaning                                                                                              |
 | --------- | ---------------------------------------------------------------------------------------------------- |
-| `bump`    | `auto`, `patch`, `minor` or `major`.                                                                 |
+| `bump`    | `auto` (default), `patch`, `minor` or `major`; empty when `version` is set.                          |
 | `version` | An exact version without the leading `v`: `0.13.0`, `0.13.0-rc.1`.                                  |
 | `notes`   | Optional. Release notes used as is; nothing is generated.                                            |
 
