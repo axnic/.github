@@ -18,11 +18,13 @@ exactly one of two inputs:
 
 | Input     | Meaning                                                                                              |
 | --------- | ---------------------------------------------------------------------------------------------------- |
-| `bump`    | `auto` (default), `patch`, `minor` or `major`; empty when `version` is set.                          |
-| `version` | An exact version without the leading `v`: `0.13.0`, `0.13.0-rc.1`.                                  |
+| `bump`    | `auto` (default), `patch`, `minor`, `major` or `manual` (release the exact `version`).               |
+| `version` | An exact version without the leading `v`: `0.13.0`, `0.13.0-rc.1`; only with `bump=manual`.          |
 | `notes`   | Optional. Release notes used as is; nothing is generated.                                            |
 
-Both `bump` and `version` set, or neither, fails the first step before anything else runs. `rc-*` bumps
+The Release caller turns `bump=manual` into an empty `bump` for the reusable workflow, which still requires
+exactly one of the two: `manual` without `version`, or any other bump together with a `version`, fails the first step before
+anything else runs. `rc-*` bumps
 do not exist: a release candidate is cut by passing `version` (`0.13.0-rc.1`).
 
 - `bump=patch|minor|major` starts from the last **stable** tag (`vX.Y.Z` without prerelease).

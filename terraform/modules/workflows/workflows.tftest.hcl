@@ -250,11 +250,11 @@ run "release_shape" {
     condition = alltrue([
       for s in [
         "  workflow_dispatch:\n    inputs:\n      bump:\n",
-        "        default: auto\n        options:\n          - \"\"\n          - auto\n",
+        "        default: auto\n        options:\n          - auto\n          - patch\n          - minor\n          - major\n          - manual\n",
         "      version:\n",
         "uses: axnic/.github/.github/workflows/release.prepare.yaml@0123456789abcdef0123456789abcdef01234567 # main",
         "    needs: prepare\n",
-        "      bump: \"$${{ inputs.bump }}\"\n",
+        "      bump: \"$${{ inputs.bump != 'manual' && inputs.bump || '' }}\"\n",
         "  prepare:\n",
         "    permissions:\n      contents: write\n      pull-requests: read\n",
         "  # publish — build the artifacts of the draft GitHub Release, from go.publish\n",
