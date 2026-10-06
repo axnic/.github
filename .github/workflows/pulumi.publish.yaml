@@ -19,10 +19,11 @@
 #               `go get github.com/<owner>/<repository>/sdk/go/<repository>@v<version>` resolves to
 #               a clean version (Go modules in a subdirectory need a tag prefixed with it). Fails
 #               when sdk/go/<repository> does not exist; a re-run is a no-op
-#   nodejs    — `make nodejs_sdk`, then `npm publish --provenance` (dist-tag `next` for a
+#   nodejs    — `make nodejs_sdk`, then `npm stage publish --provenance` (dist-tag `next` for a
 #               prerelease, npm refuses `latest` for it). Auth: npm trusted publishing (OIDC),
 #               bound to the CALLER workflow file name (workflow_dispatch.release.yaml); NPM_TOKEN
-#               is only a fallback when set. Skipped when the version is already on npm
+#               is only a fallback when set. The version is only STAGED: a maintainer approves it
+#               with 2FA (`npm stage approve`). Skipped when the version is already on npm
 #   python    — `make python_sdk`, then twine (`--skip-existing`) with PYPI_API_TOKEN; skipped
 #               when the secret is missing. pip ignores prereleases unless asked
 #   dotnet    — `make dotnet_sdk`, then `dotnet nuget push --skip-duplicate`. Auth: NuGet trusted
@@ -220,7 +221,7 @@ jobs:
           echo "::notice::Pushed ${SDK_TAG}."
 
   # ---------------------------------------------------------------------------
-  # nodejs — npm package (trusted publishing, NPM_TOKEN fallback)
+  # nodejs — npm package (staged publishing, trusted publishing, NPM_TOKEN fallback)
   # ---------------------------------------------------------------------------
   nodejs:
     name: 📦 Node.js SDK (npm)
@@ -249,7 +250,11 @@ jobs:
           PROVIDER_VERSION: ${{ inputs.version }}
         run: make nodejs_sdk PROVIDER_VERSION="$PROVIDER_VERSION"
 
-      - name: 🚀 Publish to npm
+      # `npm stage` needs npm >= 11.15.0 (the one bundled with the mise node is older).
+      - name: ⬆️ Update npm
+        run: npm install --global npm@^11.15.0
+
+      - name: 🚀 Stage on npm (approval required)
         working-directory: sdk/nodejs/bin
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -267,10 +272,23 @@ jobs:
             # shellcheck disable=SC2016
             echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > "$NPM_CONFIG_USERCONFIG"
           fi
+          # Already staged and waiting for approval (best effort: the listing may need a login).
+          if npm stage list "$NAME" 2>/dev/null | grep -qF "$VERSION"; then
+            echo "::notice::${NAME}@${VERSION} is already staged - approve it with: npm stage approve <stage-id>"
+            exit 0
+          fi
           # npm refuses to publish a prerelease to the default `latest` dist-tag.
           DIST_TAG=latest
           [[ "$VERSION" == *-* ]] && DIST_TAG=next
-          npm publish --access public --provenance --tag "$DIST_TAG"
+          # Staged publishing: the version waits on npm until a maintainer approves it with 2FA
+          # (npm stage approve, or the "Staged Packages" tab on npmjs.com). It is not public yet.
+          npm stage publish --access public --provenance --tag "$DIST_TAG"
+          {
+            echo "### 📦 ${NAME}@${VERSION} is staged on npm, not published yet"
+            echo
+            echo "Approve it (2FA required): \`npm stage list ${NAME}\` then \`npm stage approve <stage-id>\`,"
+            echo "or use the *Staged Packages* tab on https://www.npmjs.com/package/${NAME}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
   # python — PyPI package (PYPI_API_TOKEN)

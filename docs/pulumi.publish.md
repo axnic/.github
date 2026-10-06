@@ -13,7 +13,7 @@ Works on the tag and draft release that [release.prepare](release.prepare.md) cr
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `provider` | goreleaser build of the provider (`.goreleaser.yml`) without letting goreleaser publish; archives and checksums attached to the draft, a SLSA build provenance attestation for every archive, then the release is **published**. `pulumi plugin install resource <name> <version>` downloads the provider from a published release only. |
 | `go-sdk`   | After `provider`: pushes the tag `sdk/go/<repository>/v<version>` on the release commit so `go get github.com/<owner>/<repository>/sdk/go/<repository>@v<version>` resolves a clean version. Fails if `sdk/go/<repository>` does not exist; a re-run is a no-op. |
-| `nodejs`   | `make nodejs_sdk`, then `npm publish --provenance` (dist-tag `next` for a prerelease). Trusted publishing (OIDC), bound to the **caller workflow file name** `workflow_dispatch.release.yaml`; `NPM_TOKEN` only as fallback. Skipped when the version is already on npm. |
+| `nodejs`   | `make nodejs_sdk`, then `npm stage publish --provenance` (dist-tag `next` for a prerelease). The version is only **staged**: a maintainer approves it with 2FA (`npm stage approve <stage-id>`, or the *Staged Packages* tab on npmjs.com) before it is public. Trusted publishing (OIDC), bound to the **caller workflow file name** `workflow_dispatch.release.yaml`; `NPM_TOKEN` only as fallback. Skipped when the version is already on npm. |
 | `python`   | `make python_sdk`, then twine (`--skip-existing`) with `PYPI_API_TOKEN`; skipped when the secret is missing.                                                                                    |
 | `dotnet`   | `make dotnet_sdk`, then `dotnet nuget push --skip-duplicate`. Trusted publishing through `NuGet/login` when `NUGET_USER` is set, else `NUGET_API_KEY`; skipped when neither is set.              |
 
@@ -84,7 +84,7 @@ The `publish` job of the release caller (full file in [Releases](Releases.md)):
 - Trusted publishing from a reusable workflow is unverified: whether npm and NuGet match the caller file
   or the central workflow is settled by the first real release, and the registry policies may need
   adjusting.
-- npm needs npm >= 11.5.1 from the repository's mise node for OIDC.
+- npm needs npm >= 11.15.0 for `npm stage` (the job updates npm itself); the job succeeds once the version is staged, the release is complete only after the approval (the job summary says how). The "already staged" check is best effort: `npm stage list` may need a login.
 - The Pulumi release is published (not left as a draft) by design, so there is no manual review of the notes.
 - The upload filter covers the goreleaser artifact types Archive, Checksum, Signature, Certificate and
   SBOM only.
