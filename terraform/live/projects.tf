@@ -100,18 +100,18 @@ module "pulumi_pocket_id" {
   extra_topics = ["go", "pulumi-provider", "pocket-id"]
   features     = ["issues", "discussions"]
 
-  # !!! CENTRAL CI DISABLED ON PURPOSE (workflow_groups = []) !!!
-  # The default branch `main` only holds the Pulumi boilerplate: the real
-  # provider (and its mise tasks) lives in the unmerged branch stack
-  # `sdk/generate-and-examples`. The mise-task guard reads `main`, so enabling
-  # the groups now would fail the plan of the WHOLE organisation. Once that
-  # stack is merged, replace the line below with the same groups as
-  # pulumi-garage: ["core", "go", "security", "pulumi", "release", "oss", "e2e"],
-  # and add this repo to ci_bot_repos in ci_app.tf (e2e.sync).
+  ci_workflow    = "merge_group,pull_request,push.qa.yaml"
+  npm_packages   = ["@axnic/pulumi-pocket-id"]
+  pypi_packages  = ["pulumi-pocket-id"]
+  nuget_packages = ["Axnic.Pulumi.PocketId"]
+
+  # Central CI callers: same groups as pulumi-garage. The per-version E2E callers
+  # are managed by e2e.sync (CI app secrets: ci_app.tf), not by Terraform.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = []
-  # TODO(owner): set pr_agent.monthly_budget_usd
+  workflow_groups  = ["core", "go", "security", "pulumi", "release", "oss", "e2e"]
+  # 1 USD/month, same as pulumi-garage: TODO(owner) confirm
+  pr_agent = { monthly_budget_usd = 1 }
 }
 
 # ---------------------------------------------------------------------------

@@ -15,8 +15,8 @@ locals {
   ci_bot_repos = var.ci_github_app_id != "" ? toset([
     # e2e group: the central e2e.sync workflow reads CI_APP_ID / CI_APP_PRIVATE_KEY to push the
     # per-version caller files under .github/workflows/ (the app needs `workflows: write`).
-    # Add pulumi-pocket-id here once its workflow_groups include "e2e" (see projects.tf).
     module.pulumi_garage.project_info.name,
+    module.pulumi_pocket_id.project_info.name,
     # Archived repos stay listed on purpose: dropping them would destroy their secrets, and the
     # GitHub API refuses writes on archived repos (403), which could abort the org apply. Remove
     # them with a `terraform state rm` migration once the owner confirms.
