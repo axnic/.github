@@ -33,6 +33,7 @@ locals {
     module.pulumi_garage.project_info,
     module.pulumi_pocket_id.project_info,
     merge(module.medieval_claude.project_info, { type = "other" }),
+    merge(module.argocd_extension_application_map.project_info, { type = "other" }),
   ]
 }
 
@@ -136,4 +137,30 @@ module "medieval_claude" {
   }
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
+}
+
+# ---------------------------------------------------------------------------
+# argocd-extension-application-map — Argo CD UI extension (TypeScript), adopted via imports.tf.
+# ---------------------------------------------------------------------------
+module "argocd_extension_application_map" {
+  source    = "../modules/repository/base"
+  providers = { github = github, toml = toml }
+
+  name        = "argocd-extension-application-map"
+  description = "See how your Argo CD applications depend on each other: an interactive map, right in the UI."
+  features    = ["issues"]
+
+  # Central CI callers, while the repository migrates off its own workflows.
+  # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
+  terraform_app_id = var.github_app_id
+  workflow_groups  = ["core", "security", "oss", "release"]
+  # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
+  workflow_params = {
+    scan_languages = ["javascript-typescript"]
+  }
+  # 1 USD/month: decided by the owner
+  pr_agent = { monthly_budget_usd = 1 }
+
+  # Bot secrets: see ci_app.tf.
+  ruleset_bypass_actors = local.ci_bypass_actors
 }

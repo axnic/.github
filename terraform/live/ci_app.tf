@@ -17,6 +17,7 @@ locals {
     # per-version caller files under .github/workflows/ (the app needs `workflows: write`).
     module.pulumi_garage.project_info.name,
     module.pulumi_pocket_id.project_info.name,
+    module.argocd_extension_application_map.project_info.name,
     # Archived repos stay listed on purpose: dropping them would destroy their secrets, and the
     # GitHub API refuses writes on archived repos (403), which could abort the org apply. Remove
     # them with a `terraform state rm` migration once the owner confirms.
