@@ -17,21 +17,28 @@ reference: the variables below are those of its `variables.tf` at the time of wr
 
 ## Groups
 
-| Group      | Generated callers (file names)                                                                                            | Default for             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `core`     | `merge_group,pull_request,push.qa.yaml`, `issue_comment,pull_request.review.yaml`, `pull_request,push,schedule.scan.yaml` | all repositories        |
-| `go`       | `pull_request,push.test.yaml`                                                                                             | Go modules              |
-| `release`  | `workflow_dispatch.release.yaml` (`prepare` then `publish`)                                                               | Go, Pulumi              |
-| `pulumi`   | `pull_request_target.codegen.yaml`, and the Pulumi `publish` job of the release caller (includes `go`)                    | Pulumi modules          |
-| `security` | `schedule,workflow_dispatch.audit.yaml`                                                                                   | Go, Pulumi              |
-| `issues`   | `schedule,workflow_dispatch.stale.yaml`                                                                                   | **opt-in**              |
-| `oss`      | `schedule,workflow_dispatch.scorecard.yaml`, `pull_request_target.welcome.yaml`                                           | **opt-in**              |
-| `e2e`      | `schedule,workflow_dispatch.e2e-sync.yaml`; the per-version callers are then created by the sync                          | explicit                |
-| `wiki`     | `push,workflow_dispatch.wiki.yaml`                                                                                        | with the `wiki` feature |
+| Group                      | Generated callers (file names)                                                                                            | Default for             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `core`                     | `merge_group,pull_request,push.qa.yaml`, `issue_comment,pull_request.review.yaml`, `pull_request,push,schedule.scan.yaml` | all repositories        |
+| `go`                       | `pull_request,push.test.yaml`                                                                                             | Go modules              |
+| `release:go`               | `workflow_dispatch.release.yaml` (`prepare` then the reusable [go.publish](go.publish.md))                                | Go                      |
+| `release:nodejs`           | `workflow_dispatch.release.yaml` (`prepare` then the `npm` job generated in the caller)                                   | opt-in                  |
+| `release:argocd-extension` | `workflow_dispatch.release.yaml` (`prepare` then the `extension` job generated in the caller)                             | opt-in                  |
+| `release:pulumi`           | `workflow_dispatch.release.yaml` (`prepare` then the Pulumi publish jobs generated in the caller)                         | Pulumi modules          |
+| `pulumi`                   | `pull_request_target.codegen.yaml` (includes `go`)                                                                        | Pulumi modules          |
+| `security`                 | `schedule,workflow_dispatch.audit.yaml`                                                                                   | Go, Pulumi              |
+| `issues`                   | `schedule,workflow_dispatch.stale.yaml`                                                                                   | **opt-in**              |
+| `oss`                      | `schedule,workflow_dispatch.scorecard.yaml`, `pull_request_target.welcome.yaml`                                           | **opt-in**              |
+| `e2e`                      | `schedule,workflow_dispatch.e2e-sync.yaml`; the per-version callers are then created by the sync                          | explicit                |
+| `wiki`                     | `push,workflow_dispatch.wiki.yaml`                                                                                        | with the `wiki` feature |
 
-The defaults per module type are the intent of the design: `go` = core + go + security + release
-(+ wiki when the feature is on), `pulumi` = core + go + security + pulumi + release, `base` = core. Check the
+The defaults per module type are the intent of the design: `go` = core + go + security + release:go
+(+ wiki when the feature is on), `pulumi` = core + go + security + pulumi + release:pulumi, `base` = core. Check the
 repository's module call for what is actually enabled.
+
+The `release:*` groups all generate the same caller (`prepare` job included); each adds its publish part
+to it. `release:pulumi` cannot be combined with `release:go` or `release:nodejs` (validation);
+`release:nodejs` and `release:argocd-extension` can share one caller.
 
 The `core.review` caller (`review`) is only generated for a repository that has an OpenRouter key
 (`pr_agent_enabled`, below).
@@ -44,10 +51,9 @@ The `core.review` caller (`review`) is only generated for a repository that has 
 | `default_branch`   | Default branch (default `main`): read by the task guard, rendered in the callers' triggers, and where they are committed unless `branch` is set.                   |
 | `features`         | Enabled GitHub features (`issues`, `wiki`, `projects`, `discussions`).                                                                                             |
 | `branch`           | Branch the caller files are committed to; `null` = the default branch.                                                                                             |
-| `workflow_groups`  | Groups to enable: `core`, `issues`, `go`, `release`, `pulumi`, `security`, `oss`, `e2e`, `wiki`.                                                                   |
+| `workflow_groups`  | Groups to enable: `core`, `issues`, `go`, `release:go`, `release:nodejs`, `release:pulumi`, `release:argocd-extension`, `pulumi`, `security`, `oss`, `e2e`, `wiki`.                                                             |
 | `workflows`        | Single catalog entries enabled without their group, e.g. `[{ workflow = "pulumi.codegen" }]`.                                                                      |
 | `custom_workflows` | Repository-specific callers (below).                                                                                                                               |
-| `publish`          | Publish job of the release caller: `"go"` or `"pulumi"`; `null` derives it from the groups.                                                                        |
 | `pr_agent_enabled` | Generate the `core.review` caller. True only when the repository has an OpenRouter key.                                                                            |
 | `settings`         | Per-workflow parameters (below).                                                                                                                                   |
 | `commit_message`   | Commit message of caller updates, `%s` = the caller file name (default `ci(ci): Sync %s from axnic/.github-private`). It must satisfy the repository's commitlint. |
@@ -69,6 +75,7 @@ to the caller, since central workflows only have `workflow_call`.
 | `stale_cron`, `stale_days`, `stale_close_days`           | [issues.stale](issues.stale.md)                                  | `30 1 * * *`                    |
 | `audit_cron`                                             | [security.audit](security.audit.md)                              | `0 6 * * *`                     |
 | `scorecard_cron`, `welcome_message`                      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) | `0 5 * * 1`                     |
+| `extension_archive`                                      | [release:argocd-extension](Releases.md#argo-cd-extensions)       | `dist/extension.tar`            |
 | `pulumi_sdks`                                            | [pulumi.publish](pulumi.publish.md)                              | central default                 |
 | `e2e_sync_cron`, `e2e_readme_path`, `e2e_commit_subject` | [e2e.sync](e2e.sync.md)                                          | `0 3 * * 1`                     |
 | `wiki_docs_dir`                                          | [wiki.publish](wiki.publish.md)                                  | `docs`                          |

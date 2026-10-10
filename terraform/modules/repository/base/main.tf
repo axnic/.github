@@ -254,7 +254,6 @@ module "workflows" {
   workflows        = var.archived ? [] : var.workflows
   custom_workflows = var.archived ? [] : var.custom_workflows
   settings         = var.workflow_params
-  publish          = var.workflow_publish
   pr_agent_enabled = var.pr_agent != null
   commit_message   = var.workflow_commit_message
 

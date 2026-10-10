@@ -12,7 +12,7 @@ group needs. The tasks live in the repository's mise configuration (`mise.toml`,
 | `lint`, `lint:fix`         | Local only: `rtunk check .` and `rtunk check --fix .`. Not used by any workflow.                           | nothing (comfort)                            |
 | `ci:lint`                  | Linters **specific to the repository**, never rtunk (which the workflow runs through its action). Optional. | [core.qa](core.qa.md) (job skipped if absent) |
 | `ci:commitlint`            | commitlint on a range: `--from <sha> --to <sha>` or `--last`.                                              | [core.qa](core.qa.md)                        |
-| `ci:build`                 | Check that the project builds.                                                                             | [go.test](go.test.md)                        |
+| `ci:build`                 | Check that the project builds.                                                                             | [go.test](go.test.md), `release:nodejs`, `release:argocd-extension` |
 | `ci:test`                  | Run the tests (and write the coverage profile).                                                            | [go.test](go.test.md)                        |
 | `ci:coverage`              | Enforce the coverage floor. Runs **after** `ci:test` in the same job, so it may read the profile `ci:test` wrote. | [go.test](go.test.md)                 |
 | `security:audit`           | Audit the repository's dependencies, whatever the ecosystems (Go, Node.js, ...).                           | [security.audit](security.audit.md)          |
@@ -32,7 +32,9 @@ is `.rtunk/rtunk.yaml`. The `release.prepare` and publish workflows also rely on
 | `core`     | `ci:commitlint` (`ci:lint` optional)                               |
 | `go`       | `ci:build`, `ci:test`, `ci:coverage`                               |
 | `pulumi`   | the same as `go` (the group includes it)                           |
-| `release`  | `ci`                                                               |
+| `release:go`, `release:pulumi` | `ci`                                           |
+| `release:nodejs` | `ci`, `ci:build`                                             |
+| `release:argocd-extension` | `ci`, `ci:build` (must produce the bundle at `extension_archive`, default `dist/extension.tar`) |
 | `security` | `security:audit`                                                   |
 | `e2e`      | `ci:e2e` and `ci:e2e:versions`                                     |
 | `issues`, `oss`, `wiki` | none                                                  |

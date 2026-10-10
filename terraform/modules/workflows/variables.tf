@@ -38,18 +38,25 @@ variable "branch" {
 
 # A group is a preset that expands to catalog entries (see local.catalog).
 # `pulumi` includes `go`. `review` (group core) is only generated when
-# pr_agent_enabled is true.
+# pr_agent_enabled is true. The `release:<mode>` groups generate the release caller: the
+# shared prepare job plus the publish part of each mode (one or several, see the validations).
 variable "workflow_groups" {
   type        = list(string)
-  description = "Workflow groups to enable: core, issues, go, release, pulumi, security, oss, e2e, wiki."
+  description = "Workflow groups to enable: core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:nodejs, release:pulumi, release:argocd-extension."
   default     = []
 
   validation {
     condition = alltrue([
       for g in var.workflow_groups :
-      contains(["core", "issues", "go", "release", "pulumi", "security", "oss", "e2e", "wiki"], g)
+      contains(["core", "issues", "go", "pulumi", "security", "oss", "e2e", "wiki", "release:go", "release:nodejs", "release:pulumi", "release:argocd-extension"], g)
     ])
-    error_message = "workflow_groups may only include core, issues, go, release, pulumi, security, oss, e2e, wiki."
+    error_message = "workflow_groups may only include core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:nodejs, release:pulumi, release:argocd-extension."
+  }
+
+  # release:pulumi publishes the GitHub Release and the npm SDK itself.
+  validation {
+    condition     = !contains(var.workflow_groups, "release:pulumi") || !anytrue([contains(var.workflow_groups, "release:go"), contains(var.workflow_groups, "release:nodejs")])
+    error_message = "repo ${var.repository}: release:pulumi cannot be combined with release:go or release:nodejs (it already builds the provider and publishes its npm SDK)."
   }
 
   validation {
@@ -88,7 +95,7 @@ variable "workflows" {
 # this module. The file is named `<sorted triggers>.<action>.yaml` and gets the
 # same trigger and mise-task checks as catalog entries. The template writes its
 # own header and `name:`.
-# The template receives: repository, default_branch, settings, publish, caller
+# The template receives: repository, default_branch, settings, publishes, caller
 # (its own file name), vars. `template` is read by templatefile() relative to the
 # working directory, not to the calling module: pass "${path.module}/<file>"
 # from the module that calls this one.
@@ -115,21 +122,6 @@ variable "custom_workflows" {
       alltrue([for t in c.triggers : can(regex("^[a-z_]+$", t))])
     ])
     error_message = "custom_workflows[*].triggers must be a non-empty list of distinct GitHub event names (a-z and '_')."
-  }
-}
-
-# ── Release ───────────────────────────────────────────────────────────────────
-
-# Which central workflow builds and publishes the release (second job of the
-# release caller; for "pulumi" the jobs are generated into the caller itself). null = "pulumi" when the pulumi group is enabled, else "go".
-variable "publish" {
-  type        = string
-  description = "Publish part of the release caller: \"go\" (calls go.publish) or \"pulumi\" (publish jobs generated into the caller). null = derived from the groups."
-  default     = null
-
-  validation {
-    condition     = var.publish == null || contains(["go", "pulumi"], coalesce(var.publish, "go"))
-    error_message = "publish must be \"go\", \"pulumi\" or null."
   }
 }
 
@@ -169,6 +161,8 @@ variable "settings" {
     welcome_message = optional(string) # input `message`
     # pulumi publish jobs (generated into the release caller)
     pulumi_sdks = optional(list(string)) # input `sdks`
+    # release:argocd-extension: bundle produced by `mise run ci:build`, attached to the release
+    extension_archive = optional(string, "dist/extension.tar")
     # e2e.sync
     e2e_sync_cron      = optional(string, "0 3 * * 1") # Monday 03:00 UTC
     e2e_readme_path    = optional(string)              # input `readme-path`
@@ -191,6 +185,11 @@ variable "settings" {
   validation {
     condition     = alltrue([for p in var.settings.go_paths : can(regex("^[^\"\\\\\n]+$", p))])
     error_message = "settings.go_paths entries must be non-empty and contain no double quote, backslash or newline."
+  }
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._-][A-Za-z0-9._/-]*$", var.settings.extension_archive))
+    error_message = "settings.extension_archive may only contain letters, digits, '.', '_', '/' and '-' (no leading '/')."
   }
 
   validation {

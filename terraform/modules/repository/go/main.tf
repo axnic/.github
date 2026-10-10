@@ -18,11 +18,10 @@ module "base" {
   terraform_app_id      = var.terraform_app_id
   terraform_app_bypass  = var.terraform_app_bypass
 
-  workflow_groups         = var.workflow_groups == null ? concat(["core", "go", "security", "release"], contains(var.features, "wiki") ? ["wiki"] : []) : var.workflow_groups
+  workflow_groups         = var.workflow_groups == null ? concat(["core", "go", "security", "release:go"], contains(var.features, "wiki") ? ["wiki"] : []) : var.workflow_groups
   workflows               = var.workflows
   custom_workflows        = var.custom_workflows
   workflow_params         = var.workflow_params
   workflow_commit_message = var.workflow_commit_message
-  workflow_publish        = "go"
   pr_agent                = var.pr_agent
 }

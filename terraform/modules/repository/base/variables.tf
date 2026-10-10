@@ -256,7 +256,7 @@ variable "terraform_app_bypass" {
 # repositories never get callers.
 variable "workflow_groups" {
   type        = list(string)
-  description = "Workflow groups (core, issues, go, release, pulumi, security, oss, e2e, wiki). null = type default (base: core); [] = no callers."
+  description = "Workflow groups (core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:nodejs, release:pulumi, release:argocd-extension). null = type default (base: core); [] = no callers."
   default     = null
 }
 
@@ -294,7 +294,7 @@ variable "workflow_params" {
         "go_paths", "go_os", "review_model", "review_fallback_model", "scan_cron", "scan_languages",
         "stale_cron", "stale_days", "stale_close_days",
         "audit_cron", "osv_cron", "scorecard_cron", "welcome_message", "pulumi_sdks", "e2e_sync_cron",
-        "e2e_readme_path", "e2e_commit_subject", "wiki_docs_dir",
+        "e2e_readme_path", "e2e_commit_subject", "wiki_docs_dir", "extension_archive",
       ], k)
     ])
     error_message = "workflow_params keys must be attributes of modules/workflows var.settings (keep this list in sync)."
@@ -307,13 +307,6 @@ variable "workflow_commit_message" {
   description = "Commit message format for caller updates; %s = caller file name."
   default     = "ci(ci): Sync %s from axnic/.github"
   nullable    = false
-}
-
-# Publish job of the release caller ("go" | "pulumi"); null = derived from the groups.
-variable "workflow_publish" {
-  type        = string
-  description = "Publish job of the release caller: \"go\" or \"pulumi\". null = derived from the groups."
-  default     = null
 }
 
 # PR-Agent (AI review). Deliberately no budget default: null = no OpenRouter

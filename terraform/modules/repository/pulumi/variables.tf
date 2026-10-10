@@ -182,7 +182,7 @@ variable "terraform_app_bypass" {
 
 # ── Central CI callers (modules/workflows) ─────────────────────────────────────
 
-# null = the type default (core, go, security, pulumi, release); [] = no callers.
+# null = the type default (core, go, security, pulumi, release:pulumi); [] = no callers.
 variable "workflow_groups" {
   type        = list(string)
   description = "Workflow groups of modules/workflows. null = type default; [] = no callers."

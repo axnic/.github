@@ -1,6 +1,6 @@
 # pulumi.publish - Release publish for Pulumi (stage 2 of 2)
 
-Group `pulumi`. **Not a reusable workflow**: these jobs are generated into the release caller of a Pulumi
+Group `release:pulumi` (the `pulumi` group itself only adds [pulumi.codegen](pulumi.codegen.md)). **Not a reusable workflow**: these jobs are generated into the release caller of a Pulumi
 provider repository (`workflow_dispatch.release.yaml`, from `.github/workflows/templates/release/pulumi-publish-jobs.yaml.tftpl`),
 after `prepare`; they replace [go.publish](go.publish.md) in that caller. See [Releases](Releases.md). The
 provider name comes from the repository name (`pulumi-<name>`); nothing is specific to one provider.

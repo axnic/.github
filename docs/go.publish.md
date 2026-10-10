@@ -1,6 +1,6 @@
 # go.publish - Release publish for Go (stage 2 of 2)
 
-Group `go`. Central workflow: `.github/workflows/go.publish.yaml`. Second job of the release caller of a
+Groups `go` (tests) and `release:go` (this workflow in the release caller). Central workflow: `.github/workflows/go.publish.yaml`. Second job of the release caller of a
 Go repository (`needs: prepare`); see [Releases](Releases.md) and [release.prepare](release.prepare.md).
 
 ## Purpose

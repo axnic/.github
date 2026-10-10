@@ -1,0 +1,59 @@
+  # ---------------------------------------------------------------------------
+  # extension — Argo CD extension bundle on the draft release, with checksums and provenance
+  # ---------------------------------------------------------------------------
+  extension:
+    name: 🧩 Argo CD extension ($${{ needs.prepare.outputs.tag }})
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # uploads to the draft release
+      id-token: write # OIDC token for the build provenance
+      attestations: write # stores the build provenance attestation
+
+    steps:
+      - name: ⬇️ Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/$${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      # `mise run ci:build` must produce the bundle at settings.extension_archive.
+      - name: 🏗️ Build the extension bundle
+        env:
+          VERSION: $${{ needs.prepare.outputs.version }}
+        run: mise run ci:build
+
+      - name: 📄 Create the checksums
+        id: bundle
+        env:
+          ARCHIVE: ${y.extension_archive}
+        run: |
+          if [[ ! -f "$ARCHIVE" ]]; then
+            echo "::error::$ARCHIVE not found: \`mise run ci:build\` must produce the extension bundle there."
+            exit 1
+          fi
+          CHECKSUMS="$RUNNER_TEMP/$(basename "$ARCHIVE" .tar)_checksums.txt"
+          # The checksum file lists the bare file name, as argocd-extension-installer expects.
+          (cd "$(dirname "$ARCHIVE")" && sha256sum "$(basename "$ARCHIVE")") > "$CHECKSUMS"
+          cat "$CHECKSUMS"
+          echo "checksums=$CHECKSUMS" >> "$GITHUB_OUTPUT"
+
+      - name: 🛡️ Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${y.extension_archive}
+
+      # Publishing the draft stays a manual step, as for go.publish.
+      - name: ⬆️ Attach the bundle to the draft release
+        env:
+          GH_TOKEN: $${{ secrets.GITHUB_TOKEN }}
+          TAG: $${{ needs.prepare.outputs.tag }}
+          ARCHIVE: ${y.extension_archive}
+          CHECKSUMS: $${{ steps.bundle.outputs.checksums }}
+        run: gh release upload "$TAG" "$ARCHIVE" "$CHECKSUMS" --clobber

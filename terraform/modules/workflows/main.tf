@@ -13,8 +13,10 @@ locals {
   # The catalog of central workflows lives in catalog.tf (`local.catalog`).
 
   # ── Selection ───────────────────────────────────────────────────────────────
-  groups  = distinct(flatten([for g in var.workflow_groups : g == "pulumi" ? ["go", "pulumi"] : [g]]))
-  publish = coalesce(var.publish, contains(local.groups, "pulumi") ? "pulumi" : "go")
+  # `pulumi` includes `go`; every `release:<mode>` group includes the shared `release` entry
+  # (release.prepare) and adds the publish part `<mode>` to the release caller.
+  groups    = distinct(flatten([for g in var.workflow_groups : g == "pulumi" ? ["go", "pulumi"] : startswith(g, "release:") ? ["release", g] : [g]]))
+  publishes = sort(distinct([for g in var.workflow_groups : trimprefix(g, "release:") if startswith(g, "release:")]))
 
   # A group silently skips core.review without pr_agent_enabled; an explicit
   # `workflows` entry is refused by the validation of var.workflows instead.
@@ -27,14 +29,43 @@ locals {
   # axnic/.github): npm and NuGet trusted publishing match the workflow that runs the job,
   # which must be the repository's own caller.
   pulumi_sdks = local.s.pulumi_sdks != null ? local.s.pulumi_sdks : ["nodejs", "python", "dotnet"]
-  publish_jobs = local.publish == "pulumi" ? trimsuffix(templatefile("${path.module}/templates/release/pulumi-publish-jobs.yaml.tftpl", {
-    sdks = local.pulumi_sdks
-  }), "\n") : ""
+
+  # The publish modes rendered in the release caller. `go` calls the reusable go.publish (a
+  # fixed job in release.yaml.tftpl); the others are jobs generated into the caller itself.
+  publish_jobs = join("\n\n", [
+    for p in local.publishes : trimsuffix(templatefile("${path.module}/templates/release/${p}-publish-jobs.yaml.tftpl", {
+      sdks = local.pulumi_sdks
+      y    = local.y
+    }), "\n") if p != "go"
+  ])
+
+  # Mise tasks a publish mode needs, on top of those of release.prepare.
+  publish_tasks = {
+    go                 = []
+    pulumi             = []
+    nodejs             = ["ci:build"]
+    "argocd-extension" = ["ci:build"]
+  }
+
+  # Sentence and job list of the release caller header, per mode.
+  publish_summary = {
+    go                 = "publish (go.publish) builds the artifacts of the draft GitHub Release and leaves it in draft for review"
+    pulumi             = "the publish jobs below build the provider, publish the GitHub Release (out of draft, so `pulumi plugin install` can download the provider) and push the SDKs"
+    nodejs             = "the npm job stages the package on npm (a maintainer approves it with 2FA)"
+    "argocd-extension" = "the extension job attaches the Argo CD extension bundle, its checksums and provenance to the draft GitHub Release"
+  }
+  publish_header = {
+    go                 = "#   publish — build the artifacts of the draft GitHub Release, from go.publish"
+    pulumi             = "#   provider, go-sdk, nodejs, python, dotnet — publication, in this file: npm and NuGet trusted\n#             publishing only match a workflow of the repository itself, not a reusable one"
+    nodejs             = "#   npm — build the package and stage it on npm, in this file: npm trusted publishing only\n#             matches a workflow of the repository itself, not a reusable one"
+    "argocd-extension" = "#   extension — build the Argo CD extension bundle, attach it to the draft GitHub Release"
+  }
 
   # ── Rendering ───────────────────────────────────────────────────────────────
   catalog_callers = [
     for k in local.selected : merge(local.catalog[k], {
       template = "${path.module}/templates/${local.catalog[k].group}/${local.catalog[k].action}.yaml.tftpl"
+      tasks    = concat(local.catalog[k].tasks, k == "release.prepare" ? flatten([for p in local.publishes : local.publish_tasks[p]]) : [])
     })
   ]
 
@@ -74,17 +105,19 @@ locals {
         y              = local.y
         central        = local.central
         publish_jobs   = local.publish_jobs
-        publish        = local.publish
+        publishes      = local.publishes
+        publish_header = join("\n", [for p in local.publishes : local.publish_header[p]])
+        publish_text   = join("; ", [for p in local.publishes : local.publish_summary[p]])
         caller         = "${join(",", sort(c.triggers))}.${c.action}.yaml"
       })))}\n"
     })
   }
 
   # Central workflows the callers point at: one entry per catalog workflow, plus the go.publish
-  # workflow the release caller calls (the Pulumi release carries its publish jobs itself).
+  # workflow the release caller calls (the other publish modes are jobs of the caller itself).
   central_workflows = toset(concat(
     local.selected,
-    contains(local.selected, "release.prepare") && local.publish != "pulumi" ? ["${local.publish}.publish"] : [],
+    contains(local.publishes, "go") ? ["go.publish"] : [],
   ))
 
   # `uses:` is pinned to the commit that last changed the called workflow (not to the head of

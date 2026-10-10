@@ -80,12 +80,12 @@ run "review_needs_pr_agent" {
   }
 }
 
-# 3) Group expansion: pulumi includes go; release publishes with pulumi.
+# 3) Group expansion: pulumi includes go; release:pulumi publishes the SDKs.
 run "pulumi_includes_go" {
   command = plan
 
   variables {
-    workflow_groups = ["pulumi", "release"]
+    workflow_groups = ["pulumi", "release:pulumi"]
   }
 
   assert {
@@ -109,7 +109,7 @@ run "release_go" {
   command = plan
 
   variables {
-    workflow_groups = ["release"]
+    workflow_groups = ["release:go"]
   }
 
   assert {
@@ -243,7 +243,7 @@ run "release_shape" {
   command = plan
 
   variables {
-    workflow_groups = ["release"]
+    workflow_groups = ["release:go"]
   }
 
   assert {
@@ -266,13 +266,12 @@ run "release_shape" {
   }
 }
 
-# 13) Explicit publish = pulumi without the pulumi group: only the listed SDKs get a publish job.
+# 13) release:pulumi without the pulumi group: only the listed SDKs get a publish job.
 run "release_pulumi_sdks" {
   command = plan
 
   variables {
-    workflow_groups = ["release"]
-    publish         = "pulumi"
+    workflow_groups = ["release:pulumi"]
     settings        = { pulumi_sdks = ["nodejs"] }
   }
 
@@ -681,4 +680,73 @@ run "callers_pin_central_workflows_to_a_commit" {
     condition     = strcontains(github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].content, "core.qa.yaml@0123456789abcdef0123456789abcdef01234567 # main") && !strcontains(github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].content, "@main\n")
     error_message = "the caller must pin the central workflow to the commit that last changed it, not to @main"
   }
+}
+
+# 15) release:nodejs: prepare plus an npm job in the caller (staged publish), no go.publish.
+run "release_nodejs" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:nodejs"]
+  }
+
+  assert {
+    condition = alltrue([
+      for s in [
+        "  npm:\n    name: 📦 npm package\n    needs: prepare\n",
+        "npm stage publish --access public --provenance --tag \"$DIST_TAG\"",
+        "npm version \"$VERSION\" --no-git-tag-version --allow-same-version",
+        "#   npm — build the package and stage it on npm",
+        "# Requires the mise task: ci, ci:build.",
+      ] : strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, s)
+    ]) && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "go.publish") && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  provider:\n")
+    error_message = "release:nodejs must generate the npm job only"
+  }
+}
+
+# 16) release:argocd-extension: bundle, checksums, provenance, draft release upload.
+run "release_argocd_extension" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:argocd-extension"]
+    settings        = { extension_archive = "dist/extension-application-map.tar" }
+  }
+
+  assert {
+    condition = alltrue([
+      for s in [
+        "  extension:\n    name: 🧩 Argo CD extension",
+        "ARCHIVE: dist/extension-application-map.tar",
+        "subject-path: dist/extension-application-map.tar",
+        "gh release upload \"$TAG\" \"$ARCHIVE\" \"$CHECKSUMS\" --clobber",
+      ] : strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, s)
+    ])
+    error_message = "release:argocd-extension must attach the bundle to the draft release"
+  }
+}
+
+# 17) Several modes in one caller: nodejs and argocd-extension side by side.
+run "release_nodejs_and_extension" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:nodejs", "release:argocd-extension"]
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  npm:\n") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  extension:\n")
+    error_message = "both publish parts must be in the release caller"
+  }
+}
+
+# 18) release:pulumi already publishes the npm SDK: no combination with the other modes.
+run "release_pulumi_exclusive" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:pulumi", "release:nodejs"]
+  }
+
+  expect_failures = [var.workflow_groups]
 }

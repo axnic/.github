@@ -68,7 +68,7 @@ are in `modules/repository/base`.
 
 `repository/{base,go,pulumi}` call `modules/workflows` to commit thin caller workflows, which call the
 reusable workflows of this repository, into each repository. Inputs: `workflow_groups` (null = default
-of the type, `[]` = none), `workflows`, `custom_workflows`, `workflow_params`, `pr_agent` (no default;
+of the type, `[]` = none; release groups `release:go`, `release:nodejs`, `release:pulumi`, `release:argocd-extension`), `workflows`, `custom_workflows`, `workflow_params`, `pr_agent` (no default;
 never set a budget without the owner's decision).
 
 - Merge the mise-task pull requests of each repository **before** the apply: the guard reads the

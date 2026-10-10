@@ -1,0 +1,71 @@
+  # ---------------------------------------------------------------------------
+  # npm — npm package (staged publishing, trusted publishing, NPM_TOKEN fallback)
+  # ---------------------------------------------------------------------------
+  npm:
+    name: 📦 npm package
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing and provenance
+
+    steps:
+      - name: ⬇️ Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/$${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+
+      - name: 🔧 Install tools via mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          cache: true
+          cache_key: "mise-v1-{{platform}}-{{file_hash}}"
+
+      # The tag is the source of truth for the version: package.json is not bumped by the release.
+      - name: 🏷️ Set the package version
+        env:
+          VERSION: $${{ needs.prepare.outputs.version }}
+        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: 🏗️ Build the package
+        run: mise run ci:build
+
+      # `npm stage` needs npm >= 11.15.0 (the one bundled with the mise node is older).
+      - name: ⬆️ Update npm
+        run: npm install --global npm@^11.15.0
+
+      - name: 🚀 Stage on npm (approval required)
+        env:
+          NPM_TOKEN: $${{ secrets.NPM_TOKEN }}
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ -n "$(npm view "$${NAME}@$${VERSION}" version 2>/dev/null)" ]]; then
+            echo "::notice::$${NAME}@$${VERSION} is already on npm - nothing to do."
+            exit 0
+          fi
+          # Without NPM_TOKEN, npm exchanges the OIDC token (trusted publishing).
+          if [[ -n "$NPM_TOKEN" ]]; then
+            export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/.npmrc"
+            # Single quotes on purpose: npm expands $${NPM_TOKEN} from the environment itself.
+            # shellcheck disable=SC2016
+            echo '//registry.npmjs.org/:_authToken=$${NPM_TOKEN}' > "$NPM_CONFIG_USERCONFIG"
+          fi
+          # Already staged and waiting for approval (best effort: the listing may need a login).
+          if npm stage list "$NAME" 2>/dev/null | grep -qF "$VERSION"; then
+            echo "::notice::$${NAME}@$${VERSION} is already staged - approve it with: npm stage approve <stage-id>"
+            exit 0
+          fi
+          # npm refuses to publish a prerelease to the default `latest` dist-tag.
+          DIST_TAG=latest
+          [[ "$VERSION" == *-* ]] && DIST_TAG=next
+          # Staged publishing: the version waits on npm until a maintainer approves it with 2FA
+          # (npm stage approve, or the "Staged Packages" tab on npmjs.com). It is not public yet.
+          npm stage publish --access public --provenance --tag "$DIST_TAG"
+          {
+            echo "### 📦 $${NAME}@$${VERSION} is staged on npm, not published yet"
+            echo
+            echo "Approve it (2FA required): \`npm stage list $${NAME}\` then \`npm stage approve <stage-id>\`,"
+            echo "or use the *Staged Packages* tab on https://www.npmjs.com/package/$${NAME}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -5,17 +5,12 @@
 # =============================================================================
 # Triggered manually (Actions → Release → Run workflow). Set either `bump` or `version`,
 # not both. prepare runs `mise run ci`, computes the version, writes the notes and pushes
-# the tag; ${publish == "pulumi" ? "the publish jobs below build the provider, publish the GitHub Release (out of draft, so `pulumi plugin install` can download the provider) and push the SDKs" : "publish (go.publish) builds the artifacts of the draft GitHub Release and leaves it in draft for review"}.
-# Requires the mise task: ci.
+# the tag; ${publish_text}.
+# Requires the mise task: ci${contains(publishes, "nodejs") || contains(publishes, "argocd-extension") ? ", ci:build" : ""}.
 #
 # Jobs:
 #   prepare — run `mise run ci`, compute the version, write the notes, push the tag
-%{ if publish == "pulumi" ~}
-#   provider, go-sdk, nodejs, python, dotnet — publication, in this file: npm and NuGet trusted
-#             publishing only match a workflow of the repository itself, not a reusable one
-%{ else ~}
-#   publish — build the artifacts of the draft GitHub Release, from go.publish
-%{ endif ~}
+${publish_header}
 #
 # MANAGED BY TERRAFORM (axnic/.github, terraform/modules/workflows) — do not edit by hand.
 # Reusable workflow: https://github.com/axnic/.github/blob/main/.github/workflows/release.prepare.yaml
@@ -71,9 +66,13 @@ jobs:
       notes: "$${{ inputs.notes }}"
       version: "$${{ inputs.version }}"
 
-%{ if publish == "pulumi" ~}
+%{ if publish_jobs != "" ~}
 ${publish_jobs}
-%{ else ~}
+%{ endif ~}
+%{ if contains(publishes, "go") ~}
+%{ if publish_jobs != "" ~}
+
+%{ endif ~}
   # ---------------------------------------------------------------------------
   # publish — build the artifacts of the draft GitHub Release, from go.publish
   # ---------------------------------------------------------------------------
@@ -81,7 +80,7 @@ ${publish_jobs}
     name: 🚀 Publish
     needs: prepare
     # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
-    uses: axnic/.github/.github/workflows/${publish}.publish.yaml@${central[format("%s.publish", publish)]} # main
+    uses: axnic/.github/.github/workflows/go.publish.yaml@${central["go.publish"]} # main
     secrets: inherit
     permissions:
       attestations: write

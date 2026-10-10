@@ -41,17 +41,17 @@ General:
 
 Workflows, by group:
 
-| Group      | Workflows                                                                                                   |
-| ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `core`     | [core.qa](core.qa.md), [core.review](core.review.md), [core.scan](core.scan.md)                             |
-| `issues`   | [issues.stale](issues.stale.md) (opt-in)                                                                    |
-| `go`       | [go.test](go.test.md), [go.publish](go.publish.md)                                                          |
-| `release`  | [release.prepare](release.prepare.md)                                                                       |
-| `pulumi`   | [pulumi.publish](pulumi.publish.md), [pulumi.codegen](pulumi.codegen.md) (the `pulumi` group includes `go`) |
-| `security` | [security.audit](security.audit.md), [security.osv](security.osv.md)                                        |
-| `oss`      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) (opt-in, public repositories)              |
-| `e2e`      | [e2e.run](e2e.run.md), [e2e.sync](e2e.sync.md)                                                              |
-| `wiki`     | [wiki.publish](wiki.publish.md)                                                                             |
+| Group       | Workflows                                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core`      | [core.qa](core.qa.md), [core.review](core.review.md), [core.scan](core.scan.md)                                                                                     |
+| `issues`    | [issues.stale](issues.stale.md) (opt-in)                                                                                                                            |
+| `go`        | [go.test](go.test.md), [go.publish](go.publish.md)                                                                                                                  |
+| `release:*` | [release.prepare](release.prepare.md) plus the publish part: `release:go`, `release:nodejs`, `release:pulumi`, `release:argocd-extension` ([Releases](Releases.md)) |
+| `pulumi`    | [pulumi.publish](pulumi.publish.md), [pulumi.codegen](pulumi.codegen.md) (the `pulumi` group includes `go`)                                                         |
+| `security`  | [security.audit](security.audit.md), [security.osv](security.osv.md)                                                                                                |
+| `oss`       | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) (opt-in, public repositories)                                                                      |
+| `e2e`       | [e2e.run](e2e.run.md), [e2e.sync](e2e.sync.md)                                                                                                                      |
+| `wiki`      | [wiki.publish](wiki.publish.md)                                                                                                                                     |
 
 Each page documents what the workflow file declares today (inputs, secrets, permissions): the
 banner at the top of every workflow file is the reference if a page ever lags behind.

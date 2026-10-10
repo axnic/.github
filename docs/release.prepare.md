@@ -1,13 +1,13 @@
 # release.prepare - Release (stage 1 of 2)
 
-Group `release` (common to Go and Pulumi repositories). Central workflow:
+Groups `release:go`, `release:nodejs`, `release:pulumi` and `release:argocd-extension` (each includes this job). Central workflow:
 `.github/workflows/release.prepare.yaml`. First job of every repository's release caller. The whole
 process, including recovery and verification, is described in [Releases](Releases.md).
 
 ## Purpose
 
 Computes the version, verifies the commit, tags it and drafts the GitHub Release with its notes. The second
-job of the same caller ([go.publish](go.publish.md) or [pulumi.publish](pulumi.publish.md), `needs: prepare`)
+job of the same caller ([go.publish](go.publish.md), or the jobs generated into the caller by the other groups, `needs: prepare`)
 builds and attaches the artifacts. Both stages are in one caller because a tag pushed with
 `GITHUB_TOKEN` triggers no other workflow.
 

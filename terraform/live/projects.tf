@@ -56,7 +56,7 @@ module "rtunk" {
   # (symbol types, `=` = refactor/CI), so its commitlint passes on the direct push to main.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id        = var.github_app_id
-  workflow_groups         = ["core", "go", "security", "release", "wiki", "oss"]
+  workflow_groups         = ["core", "go", "security", "release:go", "wiki", "oss"]
   workflow_commit_message = "=[ci]: Sync %s from axnic/.github"
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
@@ -84,7 +84,7 @@ module "pulumi_garage" {
   # `issues` is opt-in (the former stale job only ran in dry-run mode).
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = ["core", "go", "security", "pulumi", "release", "oss", "e2e"]
+  workflow_groups  = ["core", "go", "security", "pulumi", "release:pulumi", "oss", "e2e"]
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
 }
@@ -110,7 +110,7 @@ module "pulumi_pocket_id" {
   # are managed by e2e.sync (CI app secrets: ci_app.tf), not by Terraform.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = ["core", "go", "security", "pulumi", "release", "oss", "e2e"]
+  workflow_groups  = ["core", "go", "security", "pulumi", "release:pulumi", "oss", "e2e"]
   # 1 USD/month, same as pulumi-garage: TODO(owner) confirm
   pr_agent = { monthly_budget_usd = 1 }
 }
@@ -153,10 +153,12 @@ module "argocd_extension_application_map" {
   # Central CI callers, while the repository migrates off its own workflows.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = ["core", "security", "oss", "release"]
+  workflow_groups  = ["core", "security", "oss", "release:nodejs", "release:argocd-extension"]
   # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
   workflow_params = {
     scan_languages = ["javascript-typescript"]
+    # Bundle produced by `mise run ci:build`, attached to the release.
+    extension_archive = "dist/extension-application-map.tar"
   }
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
