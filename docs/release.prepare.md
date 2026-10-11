@@ -33,6 +33,7 @@ Caller `workflow_dispatch.release.yaml`, on demand, from the **default branch** 
 | `bump`    | string | `''`    | `auto`, `patch`, `minor` or `major`.                                        |
 | `version` | string | `''`    | `X.Y.Z` or `X.Y.Z-<prerelease>`, no leading `v`.                            |
 | `notes`   | string | `''`    | Release notes used as is (nothing is generated).                            |
+| `commit-format` | string | `''` | `gitsym`, `cc` or `gitmoji`: the format `bump: auto` and the notes read. Empty reads gitsym, then Conventional Commits (the behaviour before the setting existed). The release caller passes the repository's `commit_format`. See [Releases](Releases.md#commit-formats-and-the-bump). |
 
 Exactly one of `bump` / `version`. The rules (default branch, no bump below an existing tag, `auto` needs
 new commits) are in [Releases](Releases.md#rules).
@@ -74,6 +75,7 @@ See [Releases](Releases.md#example-caller) for the full release caller. The `pre
       bump: ${{ inputs.bump }}
       version: ${{ inputs.version }}
       notes: ${{ inputs.notes }}
+      commit-format: gitsym # the repository's commit_format
     secrets: inherit
 ```
 

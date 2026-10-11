@@ -70,6 +70,7 @@ are in `modules/repository/base`.
 reusable workflows of this repository, into each repository. Inputs: `workflow_groups` (null = default
 of the type, `[]` = none; release groups `release:go`, `release:npm`, `release:pulumi`, `release:argocd-extension`), `workflows`, `custom_workflows`, `workflow_params`, `pr_agent` (no default;
 never set a budget without the owner's decision).
+`commit_format` (`gitsym` by default, `cc` or `gitmoji`) sets the commit convention the callers, the e2e sync and the release bump read; the repository's commitlint must enforce it ([Commit-Formats](../docs/Commit-Formats.md)).
 
 - Merge the mise-task pull requests of each repository **before** the apply: the guard reads the
   default branch at plan time.

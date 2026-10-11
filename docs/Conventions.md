@@ -95,8 +95,9 @@ another repository.
   `workflows`, `terraform`, `profile`, `docs`, `skills`, `deps`, `tooling`, `templates`.
 - `rtunk` uses its own symbol convention (`type[scope]:`), which is why its `renovate.json` overrides the
   commit prefix (`^[deps]:`, see [Renovate](Renovate.md)).
-- [e2e.sync](e2e.sync.md) and the Terraform `commit_message` variable must produce messages that pass the
-  commitlint of the target repository.
+- Terraform's `commit_format` setting (`gitsym` by default, `cc`, `gitmoji`) tells the tooling which one a repository
+  uses: [Commit-Formats](Commit-Formats.md). [e2e.sync](e2e.sync.md) and the Terraform `commit_message` variable must
+  produce messages that pass the commitlint of the target repository.
 
 ## Self-CI of this repository
 

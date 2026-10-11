@@ -56,7 +56,8 @@ The `core.review` caller (`review`) is only generated for a repository that has 
 | `custom_workflows` | Repository-specific callers (below).                                                                                                                               |
 | `pr_agent_enabled` | Generate the `core.review` caller. True only when the repository has an OpenRouter key.                                                                            |
 | `settings`         | Per-workflow parameters (below).                                                                                                                                   |
-| `commit_message`   | Commit message of caller updates, `%s` = the caller file name (default `ci(ci): Sync %s from axnic/.github-private`). It must satisfy the repository's commitlint. |
+| `commit_format`    | Commit format of the repository: `gitsym` (default), `cc` (Conventional Commits) or `gitmoji` ([Commit-Formats](Commit-Formats.md)). Drives the caller commits, the e2e sync subject and the release bump and notes. The repository's commitlint must enforce the same one: Terraform cannot set it. |
+| `commit_message`   | Optional (`null` by default = derived from `commit_format`). Commit message of caller updates, `%s` = the caller file name. It must satisfy the repository's commitlint. At the repository module level the variable is `workflow_commit_message`. |
 
 Validations that stop the plan: the `issues` group or `issues.stale` without the `issues` feature,
 `core.review` requested explicitly without `pr_agent_enabled`, a malformed cron or `merge_method`, a
@@ -78,11 +79,10 @@ to the caller, since central workflows only have `workflow_call`.
 | `extension_archive`                                      | [release:argocd-extension](Releases.md#argo-cd-extensions)       | `dist/extension.tar`            |
 | `npm_dir`                                                | `release:npm` ([Releases](Releases.md))                          | `.`                             |
 | `pulumi_sdks`                                            | [pulumi.publish](pulumi.publish.md)                              | central default                 |
-| `e2e_sync_cron`, `e2e_readme_path`, `e2e_commit_subject` | [e2e.sync](e2e.sync.md)                                          | `0 3 * * 1`                     |
+| `e2e_sync_cron`, `e2e_readme_path`, `e2e_commit_subject` | [e2e.sync](e2e.sync.md)                                          | `0 3 * * 1`; subject derived from `commit_format` |
 | `wiki_docs_dir`                                          | [wiki.publish](wiki.publish.md)                                  | `docs`                          |
 
-Per repository, pass the conventions of its commits: a repository whose convention is not `type(scope):`
-sets `e2e_commit_subject`. Dependency updates come from Renovate: add a `renovate.json` to the repository
+A repository declares its commit convention with `commit_format` (default `gitsym`); `pulumi-garage`, `pulumi-pocket-id` and `medieval-claude` keep `cc`, `argocd-extension-application-map` uses `gitmoji`. `e2e_commit_subject` is only needed to override the subject derived from it. Dependency updates come from Renovate: add a `renovate.json` to the repository
 ([Renovate](Renovate.md)); merging them is not automated.
 
 ### Workflows outside a group, and custom callers

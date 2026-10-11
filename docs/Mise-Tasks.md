@@ -57,6 +57,62 @@ constraints), see [Workflow-Groups](Workflow-Groups.md).
 
 ## Examples
 
+### Commit format and `ci:commitlint`
+
+The task must enforce the repository's `commit_format` ([Commit-Formats](Commit-Formats.md)): Terraform
+writes sync commits and the release reads commits in that format, but cannot configure commitlint. The
+`--from/--to/--last` handling is the same for the three formats; only the commitlint configuration changes.
+
+**gitsym** (default). Install the shared config, from [axnic/gitsym](https://github.com/axnic/gitsym/blob/main/packages/commitlint/README.md):
+
+```toml
+[tools]
+"npm:@commitlint/cli" = "latest"
+"npm:@axnic/commitlint-config-gitsym" = "latest"
+```
+
+```js
+// .commitlintrc.js
+module.exports = {
+  extends: ["@axnic/commitlint-config-gitsym"],
+  // optional: the scopes are defined per repository
+  rules: { "scope-enum": [2, "always", ["api", "ci", "deps"]] },
+};
+```
+
+The package needs `@commitlint/cli` `>=19`. Sync commits use the scope `ci` (`=[ci]: ...`), so allow it if you restrict scopes.
+
+**cc** (Conventional Commits). Use `@commitlint/config-conventional`:
+
+```js
+// .commitlintrc.js
+module.exports = { extends: ["@commitlint/config-conventional"] };
+```
+
+**gitmoji**. No shared config: parse the header yourself. The pattern below reads `:code: (scope): Subject`
+(scope optional, `!` after it for a breaking change):
+
+```js
+// .commitlintrc.js
+module.exports = {
+  parserPreset: {
+    parserOpts: {
+      headerPattern: /^(:[a-z0-9_]+:)\s+(?:\(([^()]+)\))?!?:\s*(.+)$/,
+      headerCorrespondence: ["type", "scope", "subject"],
+    },
+  },
+  rules: {
+    "type-empty": [2, "never"],
+    "subject-empty": [2, "never"],
+    "subject-case": [2, "always", "sentence-case"],
+    "header-max-length": [2, "always", 100],
+  },
+};
+```
+
+In every case the task stays `commitlint --verbose` (see below), and the `ci` scope of the sync commits must
+be accepted.
+
 ### A Go repository
 
 Taken from the shape of the `rtunk` repository.

@@ -5,6 +5,7 @@
 - [Renovate](Renovate.md)
 - [Skills](Skills.md)
 - [Conventions](Conventions.md)
+- [Commit-Formats](Commit-Formats.md)
 - [Releases](Releases.md)
 - [Mise-Tasks](Mise-Tasks.md)
 - [Workflow-Groups](Workflow-Groups.md)

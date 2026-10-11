@@ -15,6 +15,7 @@ For the list of projects, see the [organisation profile](https://github.com/axni
 | [Central CI](Central-CI.md)       | The reusable workflows shared by every repository, and how their callers are generated. |
 | [Skills](Skills.md)               | The agent skills (`skills/`) used across the projects, and how to use them.             |
 | [Conventions](Conventions.md)     | File naming, workflow house style, security rules and commit conventions.               |
+| [Commit-Formats](Commit-Formats.md) | The commit formats (gitsym, Conventional Commits, gitmoji) a repository can choose.     |
 | [Releases](Releases.md)           | The two-stage release process, recovery and verification of the artifacts.              |
 | [Mise-Tasks](Mise-Tasks.md)       | The mise tasks a repository must define for the central workflows.                      |
 | [Workflow-Groups](Workflow-Groups.md) | For each group: its callers, the mise tasks to define and what they must do.            |

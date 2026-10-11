@@ -26,6 +26,8 @@ templates in `.github/workflows/templates/` and the banner of each reusable work
 | `release:pulumi`           | `workflow_dispatch.release.yaml` (`prepare` + Pulumi publish jobs)                                                         | `ci`                            |
 | `release:argocd-extension` | `workflow_dispatch.release.yaml` (`prepare` + `extension`)                                                                 | `ci`, `ci:build`                |
 
+The four `release:*` groups all pass the repository's `commit_format` to `prepare` (`commit-format`), see [Releases](Releases.md#commit-formats-and-the-bump).
+
 Caller files are named `<sorted triggers>.<action>.yaml`. They are managed by Terraform: never edit them
 by hand. A group is refused at plan time if a required task is missing (see
 [how Terraform checks the tasks](Mise-Tasks.md#how-terraform-checks-the-tasks)).
@@ -51,7 +53,10 @@ Tasks:
 - `ci:commitlint` (required). Validates commit messages on a range given after `--`: `--from <sha> --to <sha>`
   or `--last`. The workflow passes `--last` on push, and `--from/--to` for the commits of a pull request.
   With no range it must **fail fast with a usage message**, never read stdin (commitlint would hang).
-  Dependabot pull requests are skipped by the workflow.
+  Dependabot pull requests are skipped by the workflow. The commitlint configuration must enforce the
+  repository's `commit_format` (default `gitsym`): the sync commits, the e2e subject and the release
+  notes all assume it, and Terraform cannot set it ([Commit-Formats](Commit-Formats.md),
+  [Mise-Tasks](Mise-Tasks.md#commit-format-and-ci-commitlint)).
 - `ci:lint` (optional, the job is skipped if absent). Linters specific to the repository. It must **not** run
   rtunk: rtunk has its own job in `core.qa`, configured by `.rtunk/rtunk.yaml`.
 
@@ -184,7 +189,7 @@ make test_e2e
 ```
 
 **Settings**: `e2e_sync_cron`, `e2e_readme_path` (default `README.md`), `e2e_commit_subject` (central
-default `ci(ci): Sync E2E callers`, it must satisfy the repository's commitlint).
+default derived from `commit_format`: `=[ci]: Sync E2E callers`, `ci(ci): Sync E2E callers` or `:construction_worker: (ci): Sync E2E callers`; it must satisfy the repository's commitlint).
 
 **Prerequisites**: an e2e badge table in the README (without it the README is left alone), the repository
 setting "Allow GitHub Actions to create and approve pull requests", and the `axnic-bot` GitHub App

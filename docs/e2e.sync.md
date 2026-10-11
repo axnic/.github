@@ -40,7 +40,7 @@ and on demand.
 | Input            | Type   | Default                      | Notes                                                                             |
 | ---------------- | ------ | ---------------------------- | --------------------------------------------------------------------------------- |
 | `readme-path`    | string | `README.md`                  | README holding the E2E badge table.                                               |
-| `commit-subject` | string | `ci(ci): Sync E2E callers`   | Commit subject and PR title; must satisfy the repository's commitlint (mandatory scope). |
+| `commit-subject` | string | `ci(ci): Sync E2E callers`   | Commit subject and PR title; must satisfy the repository's commitlint. The generated caller always passes it: `=[ci]: Sync E2E callers` (gitsym), `ci(ci): Sync E2E callers` (cc) or `:construction_worker: (ci): Sync E2E callers` (gitmoji), from the repository's `commit_format` ([Commit-Formats](Commit-Formats.md)); the setting `e2e_commit_subject` overrides it. |
 
 ## Secrets
 
@@ -81,7 +81,7 @@ jobs:
     # Pinned to the axnic/.github commit that last changed this workflow; Terraform keeps it up to date.
     uses: axnic/.github/.github/workflows/e2e.sync.yaml@<commit-sha> # main
     with:
-      commit-subject: ci(ci): Sync E2E callers
+      commit-subject: "=[ci]: Sync E2E callers" # derived from commit_format (gitsym here)
     secrets: inherit
     permissions:
       contents: write
@@ -90,8 +90,9 @@ jobs:
 
 ## Known limitations
 
-- The default `commit-subject` (`ci(ci): ...`) is only valid for repositories whose commitlint scope enum
-  contains `ci`; others set it (rtunk does).
+- The central default `commit-subject` (`ci(ci): ...`) only applies to a caller that does not pass it; generated callers
+  always do. The scope `ci` must be accepted by the repository's commitlint (scope enum), otherwise set
+  `e2e_commit_subject`.
 - An open sync pull request has its body overwritten with the set of versions missing at the time of the
   run.
 - The commit is signed off but not GPG-signed; a repository that requires signed commits needs a squash

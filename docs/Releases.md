@@ -33,9 +33,25 @@ do not exist: a release candidate is cut by passing `version` (`0.13.0-rc.1`).
 
 - `bump=patch|minor|major` starts from the last **stable** tag (`vX.Y.Z` without prerelease).
 - `bump=auto` reads the commits since the last stable tag: a breaking change gives **major** (a 0.x
-  project goes to 1.0.0), a feature gives **minor**, anything else **patch**. Both rtunk's symbol
-  convention and Conventional Commits are understood. A breaking change is `+!`/`~!`/`-!`, `type!:` /
-  `type(scope)!:` or a `BREAKING CHANGE:` footer.
+  project goes to 1.0.0), a feature gives **minor**, anything else **patch**. How the commits are read
+  depends on the repository's `commit_format` ([below](#commit-formats-and-the-bump)).
+
+### Commit formats and the bump
+
+The release caller passes the repository's `commit_format` (`commit-format` input of
+[release.prepare](release.prepare.md); [Commit-Formats](Commit-Formats.md)). It selects how `bump: auto`
+computes the version and how the notes group the commits. Commits that do not follow the format count as
+`patch`-level changes (no breaking nor feature). Empty `commit-format` reads gitsym, then Conventional
+Commits.
+
+| Format    | Reads                                  | Breaking (major)                          | Feature (minor)                       | Other (patch)                       |
+| --------- | -------------------------------------- | ----------------------------------------- | ------------------------------------- | ----------------------------------- |
+| `gitsym`  | `type[scope]: Subject`                 | `~![api]: Require an API key`             | `+[api]: Add pagination`              | `![auth]: Handle expired tokens`    |
+| `cc`      | `type(scope)!: Subject`                | `feat(api)!: Require an API key`          | `feat(api): Add pagination`           | `fix(auth): Handle expired tokens`  |
+| `gitmoji` | `:code: (scope)!: Subject`             | `:boom: (api): Require an API key`, or `:sparkles: (api)!: ...` | `:sparkles: (api): Add pagination` | `:bug: (auth): Handle expired tokens` |
+
+In all formats a `BREAKING CHANGE:` footer is a breaking change. Gitmoji codes are mapped to the gitsym
+types through `scripts/gitmoji-types.json` (a code not in it is `*`); the notes group on those types.
 
 ### Rules
 
@@ -206,6 +222,7 @@ jobs:
       bump: ${{ inputs.bump }}
       version: ${{ inputs.version }}
       notes: ${{ inputs.notes }}
+      commit-format: gitsym # the repository's commit_format
     secrets: inherit
   publish:
     needs: prepare
