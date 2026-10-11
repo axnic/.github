@@ -135,3 +135,22 @@ test("CLI against a real git repository: re-run after the tag push is refused", 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("bumpLevel reads gitmoji commits when asked to", () => {
+  assert.equal(bumpLevel([":bug: (cli): Fix a crash", ":arrow_up: (deps): Bump x"], "gitmoji"), "patch");
+  assert.equal(bumpLevel([":bug: (cli): Fix a crash", ":sparkles: (check): Add --from"], "gitmoji"), "minor");
+  assert.equal(bumpLevel([":sparkles: (api)!: Rename the field"], "gitmoji"), "major");
+  assert.equal(bumpLevel([":boom: (api): Drop v1"], "gitmoji"), "major");
+  assert.equal(bumpLevel([":bug: (key): Rotate\n\nBREAKING CHANGE: the key format changed"], "gitmoji"), "major");
+});
+
+test("bumpLevel ignores the other formats once a format is set", () => {
+  assert.equal(bumpLevel(["feat(bucket): Add quotas"], "gitsym"), "patch");
+  assert.equal(bumpLevel(["+[check]: Add --from"], "cc"), "patch");
+  assert.equal(bumpLevel(["+[check]: Add --from"], "gitsym"), "minor");
+});
+
+test("nextVersion passes the commit format to the bump level", () => {
+  const r = nextVersion({ bump: "auto", tags: ["v1.0.0"], messages: () => [":sparkles: (x): Add it"], format: "gitmoji" });
+  assert.equal(r.version, "1.1.0");
+});

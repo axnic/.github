@@ -9,8 +9,9 @@
  *   VERSION=X.Y.Z[-pre]          exactly that version (no leading "v"); a prerelease such as
  *                                0.13.0-rc.1 is how a release candidate is cut.
  *
- * Both commit conventions of parseSubject are understood (rtunk's `+![scope]:` and Conventional
- * Commits' `feat(scope)!:`), plus a `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer.
+ * COMMIT_FORMAT (gitsym | cc | gitmoji) picks the convention parseSubject reads (gitsym's `+![scope]:`,
+ * Conventional Commits' `feat(scope)!:`, gitmoji's `:sparkles: (scope)!:`); empty reads gitsym then
+ * Conventional Commits. A `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer is a breaking change in every format.
  *
  * Usage (from the repository being released, git history fetched):
  *   BUMP=auto node scripts/release-version.mjs
@@ -53,11 +54,11 @@ export function compareVersions(a, b) {
 }
 
 /** "major" | "minor" | "patch" from the full messages (subject + body) of the commits. */
-export function bumpLevel(messages) {
+export function bumpLevel(messages, format = "") {
   let level = "patch";
   for (const msg of messages) {
     const [subject, ...body] = msg.split("\n");
-    const parsed = parseSubject(commitTitle(subject.trim(), body.join("\n")));
+    const parsed = parseSubject(commitTitle(subject.trim(), body.join("\n")), format);
     if (parsed?.breaking || /^BREAKING[ -]CHANGE:/m.test(msg)) return "major";
     if (parsed?.type === "+") level = "minor";
   }
@@ -73,7 +74,7 @@ export function bumpLevel(messages) {
  *   (only called for bump=auto).
  * @returns {{version: string, tag: string, prevTag: string, prerelease: boolean}}
  */
-export function nextVersion({ bump = "", version = "", tags, headTags = [], ref = "", defaultBranch = "", messages = () => [] }) {
+export function nextVersion({ bump = "", version = "", tags, headTags = [], ref = "", defaultBranch = "", messages = () => [], format = "" }) {
   if (!bump === !version) throw new Error("set exactly one of the inputs 'bump' and 'version'");
   if (defaultBranch && ref !== `refs/heads/${defaultBranch}`) {
     throw new Error(`releases (release candidates included) are cut from the default branch '${defaultBranch}', not from '${ref}'`);
@@ -101,7 +102,7 @@ export function nextVersion({ bump = "", version = "", tags, headTags = [], ref 
     if (bump === "auto") {
       const msgs = messages();
       if (msgs.length === 0) throw new Error(`no commit since v${lastStable}: nothing to release`);
-      level = bumpLevel(msgs);
+      level = bumpLevel(msgs, format);
     }
     const [, ma, mi, pa] = lastStable.match(SEMVER).map(Number);
     next = { major: `${ma + 1}.0.0`, minor: `${ma}.${mi + 1}.0`, patch: `${ma}.${mi}.${pa + 1}` }[level];
@@ -127,6 +128,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       headTags: git("tag", "--points-at", "HEAD", "v*").split("\n").filter(Boolean),
       ref: process.env.GITHUB_REF ?? "",
       defaultBranch: process.env.DEFAULT_BRANCH?.trim() ?? "",
+      format: process.env.COMMIT_FORMAT?.trim() ?? "",
       messages: () => {
         const stable = tags.filter((t) => SEMVER.test(t.slice(1)) && !t.includes("-"));
         const last = stable.sort((a, b) => compareVersions(a.slice(1), b.slice(1))).at(-1);

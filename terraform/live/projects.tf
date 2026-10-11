@@ -53,12 +53,11 @@ module "rtunk" {
 
   ci_workflow = "merge_group,pull_request,push.qa.yaml"
 
-  # Central CI callers. The commit messages follow rtunk's `type[scope]:` convention
-  # (symbol types, `=` = refactor/CI), so its commitlint passes on the direct push to main.
+  # Central CI callers. The commit format is the default (gitsym: symbol types, `=` = refactor/CI),
+  # so its commitlint passes on the direct push to main.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
-  terraform_app_id        = var.github_app_id
-  workflow_groups         = ["core", "go", "security", "release:go", "wiki", "oss"]
-  workflow_commit_message = "=[ci]: Sync %s from axnic/.github"
+  terraform_app_id = var.github_app_id
+  workflow_groups  = ["core", "go", "security", "release:go", "wiki", "oss"]
   # 1 USD/month: decided by the owner
   pr_agent = { monthly_budget_usd = 1 }
 }
@@ -74,6 +73,9 @@ module "pulumi_garage" {
   description  = "Pulumi provider for Garage (S3 object store)"
   extra_topics = ["go", "pulumi-provider", "garage"]
   features     = ["issues", "discussions"]
+
+  # Conventional Commits, as before the commit format became a setting (default: gitsym).
+  commit_format = "cc"
 
   ci_workflow    = "merge_group,pull_request,push.qa.yaml"
   npm_packages   = ["@axnic/pulumi-garage"]
@@ -102,6 +104,9 @@ module "pulumi_pocket_id" {
   extra_topics = ["go", "pulumi-provider", "pocket-id"]
   features     = ["issues", "discussions"]
 
+  # Conventional Commits, as before the commit format became a setting (default: gitsym).
+  commit_format = "cc"
+
   ci_workflow    = "merge_group,pull_request,push.qa.yaml"
   npm_packages   = ["@axnic/pulumi-pocket-id"]
   pypi_packages  = ["pulumi-pocket-id"]
@@ -127,6 +132,9 @@ module "medieval_claude" {
   description = "Des enchantements pour Claude Code : la forme change, le fond jamais."
   features    = ["issues", "wiki", "projects"]
 
+  # Conventional Commits, as before the commit format became a setting (default: gitsym).
+  commit_format = "cc"
+
   # Central CI callers: core only.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
@@ -150,6 +158,9 @@ module "argocd_extension_application_map" {
   name        = "argocd-extension-application-map"
   description = "See how your Argo CD applications depend on each other: an interactive map, right in the UI."
   features    = ["issues"]
+
+  # Gitmoji (`:code: (scope): Subject`), enforced by the repository's commitlint.
+  commit_format = "gitmoji"
 
   # Central CI callers, while the repository migrates off its own workflows.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
@@ -179,15 +190,17 @@ module "gitsym" {
   description = "Conventional Commits meets gitmoji: a git convention that reads at a glance, with its commitlint config."
   features    = ["issues"]
 
-  # Central CI callers: none for the first apply (the repository does not exist yet, and the
-  # plan-time guard reads its default branch). Then enable ["core", "security"] once
-  # `ci:commitlint` and `security:audit` are on that branch. Static repository: no PR-Agent.
+  # Central CI callers: core, security and the npm release of packages/commitlint. The repository's
+  # mise tasks (ci:commitlint, security:audit, ci, ci:build) satisfy the plan-time guard.
+  # Static repository: no PR-Agent.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = []
+  workflow_groups  = ["core", "security", "release:npm"]
   # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
   workflow_params = {
     scan_languages = ["javascript-typescript"]
+    # The npm package lives in a sub-directory.
+    npm_dir = "packages/commitlint"
   }
 
   # Organisation admins may push straight to main (static repository, single maintainer): the

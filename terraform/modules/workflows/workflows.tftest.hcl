@@ -288,7 +288,7 @@ run "release_pulumi_sdks" {
 }
 
 # 14) E2E: only the sync caller (per-version callers belong to e2e.sync),
-# Monday 03:00 UTC, central defaults for commit-subject / readme-path; only
+# Monday 03:00 UTC, the gitsym commit subject, central default for readme-path; only
 # ci:e2e:versions is required (ci:e2e belongs to the per-version callers).
 run "e2e_sync" {
   command = plan
@@ -326,7 +326,7 @@ run "e2e_sync" {
   }
 
   assert {
-    condition     = !strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "commit-subject") && !strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "readme-path")
+    condition     = strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      commit-subject: \"=[ci]: Sync E2E callers\"\n") && !strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "readme-path")
     error_message = "unset e2e inputs must not be rendered"
   }
 }
@@ -752,4 +752,119 @@ run "release_pulumi_exclusive" {
   }
 
   expect_failures = [var.workflow_groups]
+}
+
+# 19) Commit format: gitsym by default (sync commit, E2E subject, release input), cc and gitmoji on demand.
+run "commit_format_default" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core", "release:go"]
+  }
+
+  assert {
+    condition     = github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].commit_message == "=[ci]: Sync merge_group,pull_request,push.qa.yaml from axnic/.github"
+    error_message = "the default sync commit must be a gitsym message"
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "      commit-format: gitsym\n")
+    error_message = "the release caller must pass the gitsym commit format"
+  }
+}
+
+run "commit_format_cc" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core", "release:go", "e2e"]
+    commit_format   = "cc"
+  }
+
+  override_data {
+    target = data.github_repository_file.mise_config
+    values = {
+      content = <<-TOML
+        [tasks."ci:commitlint"]
+        run = "commitlint"
+        [tasks.ci]
+        run = "echo ci"
+        [tasks."ci:e2e"]
+        run = "echo e2e"
+        [tasks."ci:e2e:versions"]
+        run = "echo v2.3.0"
+      TOML
+    }
+  }
+
+  assert {
+    condition     = github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].commit_message == "ci(ci): Sync merge_group,pull_request,push.qa.yaml from axnic/.github"
+    error_message = "a cc repository must get a Conventional Commits sync message"
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "      commit-format: cc\n") && strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      commit-subject: \"ci(ci): Sync E2E callers\"\n")
+    error_message = "the release caller and the E2E sync must follow the cc format"
+  }
+}
+
+run "commit_format_gitmoji" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core", "release:go", "e2e"]
+    commit_format   = "gitmoji"
+  }
+
+  override_data {
+    target = data.github_repository_file.mise_config
+    values = {
+      content = <<-TOML
+        [tasks."ci:commitlint"]
+        run = "commitlint"
+        [tasks.ci]
+        run = "echo ci"
+        [tasks."ci:e2e"]
+        run = "echo e2e"
+        [tasks."ci:e2e:versions"]
+        run = "echo v2.3.0"
+      TOML
+    }
+  }
+
+  assert {
+    condition     = github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].commit_message == ":construction_worker: (ci): Sync merge_group,pull_request,push.qa.yaml from axnic/.github"
+    error_message = "a gitmoji repository must get a gitmoji sync message"
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "      commit-format: gitmoji\n") && strcontains(github_repository_file.caller["schedule,workflow_dispatch.e2e-sync.yaml"].content, "      commit-subject: \":construction_worker: (ci): Sync E2E callers\"\n")
+    error_message = "the release caller and the E2E sync must follow the gitmoji format"
+  }
+}
+
+run "commit_message_override" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    commit_format   = "cc"
+    commit_message  = "chore(ci): Sync %s"
+  }
+
+  assert {
+    condition     = github_repository_file.caller["merge_group,pull_request,push.qa.yaml"].commit_message == "chore(ci): Sync merge_group,pull_request,push.qa.yaml"
+    error_message = "commit_message must override the message derived from the format"
+  }
+}
+
+run "commit_format_unknown" {
+  command = plan
+
+  variables {
+    workflow_groups = ["core"]
+    commit_format   = "emoji"
+  }
+
+  expect_failures = [var.commit_format]
 }

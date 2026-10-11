@@ -168,7 +168,7 @@ variable "settings" {
     # e2e.sync
     e2e_sync_cron      = optional(string, "0 3 * * 1") # Monday 03:00 UTC
     e2e_readme_path    = optional(string)              # input `readme-path`
-    e2e_commit_subject = optional(string)              # input `commit-subject` (central default: ci(ci): Sync E2E callers)
+    e2e_commit_subject = optional(string)              # input `commit-subject` (default derived from commit_format)
     # wiki.publish
     wiki_docs_dir = optional(string, "docs") # input `docs-dir` and push path filter
   })
@@ -208,15 +208,30 @@ variable "settings" {
 
 # ── Commits ───────────────────────────────────────────────────────────────────
 
-# Each repository has its own commit convention (rtunk uses `type[scope]:`).
-# `%s` is replaced by the caller file name.
-variable "commit_message" {
+# Commit format of the repository: it sets the message of the caller commits and the E2E sync
+# commit, and the format that release.prepare reads for the bump and the release notes. The repository's
+# own commitlint (mise task ci:commitlint) must enforce the same format.
+variable "commit_format" {
   type        = string
-  description = "Commit message format for caller updates; %s = caller file name."
-  default     = "ci(ci): Sync %s from axnic/.github"
+  description = "Commit format of the repository: gitsym (default), cc (Conventional Commits) or gitmoji."
+  default     = "gitsym"
+  nullable    = false
 
   validation {
-    condition     = strcontains(var.commit_message, "%s")
+    condition     = contains(["gitsym", "cc", "gitmoji"], var.commit_format)
+    error_message = "commit_format must be gitsym, cc or gitmoji."
+  }
+}
+
+# Overrides the message derived from commit_format (e.g. a repository whose commitlint wants a
+# scope outside the usual ones). `%s` is replaced by the caller file name.
+variable "commit_message" {
+  type        = string
+  description = "Commit message of the caller updates; %s = caller file name. null = derived from commit_format."
+  default     = null
+
+  validation {
+    condition     = var.commit_message == null || strcontains(coalesce(var.commit_message, "%s"), "%s")
     error_message = "commit_message must contain %s (the caller file name)."
   }
 }

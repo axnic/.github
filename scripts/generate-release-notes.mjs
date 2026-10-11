@@ -9,8 +9,9 @@
  * verbatim when no model is available. Shared by every axnic repository through the central
  * release.prepare.yaml workflow.
  *
- * Two commit conventions are understood (see parseSubject): rtunk's symbol convention
- * (`type[scope]: Subject`) and Conventional Commits (`type(scope): Subject`).
+ * Three commit formats are understood (see parseSubject): gitsym (`type[scope]: Subject`),
+ * Conventional Commits (`type(scope): Subject`) and gitmoji (`:code: (scope): Subject`); the
+ * --commit-format option picks one, without it gitsym then Conventional Commits are read.
  *
  * Usage:
  *   node scripts/generate-release-notes.mjs \
@@ -27,6 +28,7 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
@@ -86,22 +88,52 @@ const CONVENTIONAL_TYPES = {
   security: "$",
 };
 
+/** Gitmoji code (`:sparkles:`) -> symbol type, from the gitmoji lists of gitsym's data/symbols.json. */
+const GITMOJI_TYPES = createRequire(import.meta.url)("./gitmoji-types.json");
+
+/** The commit formats a repository can follow (the `commit-format` input of release.prepare). */
+export const COMMIT_FORMATS = ["gitsym", "cc", "gitmoji"];
+
+// gitsym: `type[scope]: Subject`, the scope is optional; `!` after the type marks a breaking change.
+const GITSYM = /^([+\-~!=^><@$?*])(!?)(?:\[([^\]]+)\])?:\s*(.+?)(?:\s+\(#\d+\))?$/;
+// Conventional Commits: `type(scope)!: Subject`.
+const CC = /^([a-z]+)(?:\(([^()]+)\))?(!?):\s*(.+?)(?:\s+\(#\d+\))?$/;
+// Gitmoji: `:code: (scope)!: Subject`, the scope is optional; `:boom:` is always breaking.
+const GITMOJI = /^(:[a-z0-9_]+:)\s+(?:\(([^()]+)\))?(!?):\s*(.+?)(?:\s+\(#\d+\))?$/;
+
 /**
- * Parses a commit subject in either convention and returns its symbol type:
- *   - rtunk: `type[scope]: Subject`, where type is one symbol (`+`, `!`, ...), optionally followed by
+ * Parses a commit subject and returns its symbol type. `format` is one of COMMIT_FORMATS; an empty
+ * format reads gitsym, then Conventional Commits (what the repositories did before the format was
+ * a setting):
+ *   - gitsym: `type[scope]: Subject`, type being one symbol (`+`, `!`, ...) optionally followed by
  *     `!` for a breaking change (`+!`, `~!`, `-!`);
- *   - Conventional Commits: `type(scope)!: Subject` (scope optional), mapped through
- *     CONVENTIONAL_TYPES.
+ *   - cc (Conventional Commits): `type(scope)!: Subject` (scope optional), mapped through
+ *     CONVENTIONAL_TYPES;
+ *   - gitmoji: `:code: (scope)!: Subject` (scope optional), mapped through the gitmoji lists of
+ *     gitsym's vocabulary; `:boom:` is a breaking change.
  * The scope may list several comma-separated scopes. A trailing ` (#123)` (GitHub's merge-commit
  * suffix) is dropped, since the PR link is rendered separately. Returns null when the subject
- * follows neither convention.
+ * does not follow the format.
  */
-export function parseSubject(subject) {
-  const m = subject.match(/^([+\-~!=^><@$?*])(!?)\[([^\]]+)\]:\s*(.+?)(?:\s+\(#\d+\))?$/);
-  if (m) return { type: m[1], breaking: m[2] === "!", scope: m[3], description: m[4] };
-  const c = subject.match(/^([a-z]+)(?:\(([^()]+)\))?(!?):\s*(.+?)(?:\s+\(#\d+\))?$/);
-  if (!c) return null;
-  return { type: CONVENTIONAL_TYPES[c[1]] ?? "*", breaking: c[3] === "!", scope: c[2] ?? null, description: c[4] };
+export function parseSubject(subject, format = "") {
+  if (format && !COMMIT_FORMATS.includes(format)) throw new Error(`unknown commit format '${format}' (${COMMIT_FORMATS.join("|")})`);
+  if (!format || format === "gitsym") {
+    const m = subject.match(GITSYM);
+    if (m) return { type: m[1], breaking: m[2] === "!", scope: m[3] ?? null, description: m[4] };
+    if (format) return null;
+  }
+  if (!format || format === "cc") {
+    const c = subject.match(CC);
+    if (c) return { type: CONVENTIONAL_TYPES[c[1]] ?? "*", breaking: c[3] === "!", scope: c[2] ?? null, description: c[4] };
+    if (format) return null;
+  }
+  if (format === "gitmoji") {
+    const g = subject.match(GITMOJI);
+    if (!g) return null;
+    const boom = g[1] === ":boom:";
+    return { type: boom ? "~" : (GITMOJI_TYPES[g[1]] ?? "*"), breaking: boom || g[3] === "!", scope: g[2] ?? null, description: g[4] };
+  }
+  return null;
 }
 
 /**
@@ -152,7 +184,7 @@ export function generateReleaseNotes(version, commits, prBySha, opts = {}) {
   const changeLines = commits.map((c) => {
     const pr = prBySha.get(c.sha) ?? null;
     const title = commitTitle(c.subject, c.body);
-    const parsed = parseSubject(title);
+    const parsed = parseSubject(title, opts.format);
     return buildChangeLine(
       parsed
         ? { prefix: PREFIXES[parsed.type], ...parsed }
@@ -218,11 +250,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       "prev-tag": { type: "string" },
       output: { type: "string" },
       "context-output": { type: "string" },
+      "commit-format": { type: "string", default: "" },
     },
   });
   if (!args.version || !args["commits-file"] || !args.output) {
     console.error(
-      "Usage: node generate-release-notes.mjs --version <v> --commits-file <path> --output <path> [--prs-file <path>] [--repo <owner/repo> --prev-tag <tag>]",
+      "Usage: node generate-release-notes.mjs --version <v> --commits-file <path> --output <path> [--prs-file <path>] [--repo <owner/repo> --prev-tag <tag>] [--commit-format gitsym|cc|gitmoji]",
     );
     process.exit(1);
   }
@@ -241,7 +274,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
   writeFileSync(
     args.output,
-    generateReleaseNotes(args.version, commits, prBySha, { repo: args.repo, prevTag: args["prev-tag"] }),
+    generateReleaseNotes(args.version, commits, prBySha, { repo: args.repo, prevTag: args["prev-tag"], format: args["commit-format"] }),
   );
   if (args["context-output"]) writeFileSync(args["context-output"], buildLlmContext(commits, prBySha));
   console.log(`Deterministic release notes written to ${args.output} (${commits.length} commit(s))`);

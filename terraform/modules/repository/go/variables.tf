@@ -191,11 +191,20 @@ variable "workflow_params" {
   nullable    = false
 }
 
+# Commit format of the repository (sync commits, release bump and notes). Its commitlint must
+# enforce the same format.
+variable "commit_format" {
+  type        = string
+  description = "Commit format of the repository: gitsym (default), cc (Conventional Commits) or gitmoji."
+  default     = "gitsym"
+  nullable    = false
+}
+
+# Overrides the sync commit message derived from commit_format; %s = caller file name.
 variable "workflow_commit_message" {
   type        = string
-  description = "Commit message format for caller updates; %s = caller file name. Must satisfy the repository's commitlint."
-  default     = "ci(ci): Sync %s from axnic/.github"
-  nullable    = false
+  description = "Commit message format for caller updates; %s = caller file name. null = derived from commit_format. Must satisfy the repository's commitlint."
+  default     = null
 }
 
 # No budget default: null = no OpenRouter key and no AI Review caller.

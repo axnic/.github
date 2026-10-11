@@ -65,6 +65,7 @@ jobs:
       bump: "$${{ inputs.bump != 'manual' && inputs.bump || '' }}"
       notes: "$${{ inputs.notes }}"
       version: "$${{ inputs.version }}"
+      commit-format: ${commit_format}
 
 %{ if publish_jobs != "" ~}
 ${publish_jobs}

@@ -255,6 +255,7 @@ module "workflows" {
   custom_workflows = var.archived ? [] : var.custom_workflows
   settings         = var.workflow_params
   pr_agent_enabled = var.pr_agent != null
+  commit_format    = var.commit_format
   commit_message   = var.workflow_commit_message
 
   # Commit only once the ruleset (and its Terraform app bypass) is in place.

@@ -117,3 +117,38 @@ test("buildLlmContext joins commit and PR details and truncates long bodies", ()
   assert.ok(out.includes("author: @bob\npr: #4 https://x/pull/4\npr title: Add A\npr description: why"));
   assert.ok(out.includes("\n---\ncommit: 0000000 !?[bad]") && out.endsWith("pr: (none)"));
 });
+
+test("parseSubject with an explicit format reads only that format", () => {
+  assert.equal(parseSubject("feat(ci): Add it", "gitsym"), null);
+  assert.equal(parseSubject("+[ci]: Add it", "cc"), null);
+  assert.equal(parseSubject(":sparkles: (ci): Add it", "cc"), null);
+  assert.equal(parseSubject("+[ci]: Add it", "gitmoji"), null);
+  assert.throws(() => parseSubject("+[ci]: Add it", "emoji"), /unknown commit format/);
+});
+
+test("parseSubject reads gitsym headers without a scope", () => {
+  assert.deepEqual(parseSubject("+: Add the thing", "gitsym"), { type: "+", breaking: false, scope: null, description: "Add the thing" });
+  assert.deepEqual(parseSubject("~!: Change the default"), { type: "~", breaking: true, scope: null, description: "Change the default" });
+  assert.deepEqual(parseSubject("![auth]: Handle expired tokens", "gitsym"), { type: "!", breaking: false, scope: "auth", description: "Handle expired tokens" });
+});
+
+test("parseSubject maps gitmoji codes onto the symbol types", () => {
+  assert.deepEqual(parseSubject(":sparkles: (api): Add pagination (#8)", "gitmoji"), {
+    type: "+",
+    breaking: false,
+    scope: "api",
+    description: "Add pagination",
+  });
+  assert.equal(parseSubject(":bug: (auth): Handle expired tokens", "gitmoji").type, "!");
+  assert.equal(parseSubject(":construction_worker: (ci): Sync x", "gitmoji").type, "=");
+  assert.equal(parseSubject(":memo: Fix the typo", "gitmoji"), null);
+  assert.equal(parseSubject(":memo: (docs): Fix the typo", "gitmoji").type, "@");
+  assert.equal(parseSubject(":not_a_code: (x): Y", "gitmoji").type, "*");
+  assert.equal(parseSubject("Merge pull request #3 from x/y", "gitmoji"), null);
+});
+
+test("parseSubject flags gitmoji breaking changes with ! or :boom:", () => {
+  assert.equal(parseSubject(":sparkles: (api)!: Rename the field", "gitmoji").breaking, true);
+  assert.equal(parseSubject(":boom: (api): Drop v1", "gitmoji").breaking, true);
+  assert.equal(parseSubject(":sparkles: (api): Add it", "gitmoji").breaking, false);
+});

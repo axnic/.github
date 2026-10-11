@@ -22,6 +22,7 @@ module "base" {
   workflows               = var.workflows
   custom_workflows        = var.custom_workflows
   workflow_params         = var.workflow_params
+  commit_format           = var.commit_format
   workflow_commit_message = var.workflow_commit_message
   pr_agent                = var.pr_agent
 }

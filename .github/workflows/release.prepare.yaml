@@ -52,6 +52,8 @@
 #   bump     string, default '' — auto | patch | minor | major
 #   version  string, default '' — X.Y.Z or X.Y.Z-<prerelease>, no leading "v"
 #   notes    string, default '' — release notes used as is (nothing is generated)
+#   commit-format  string, default '' — gitsym | cc | gitmoji: the commit format that bump=auto and
+#                  the release notes read; empty reads gitsym, then Conventional Commits
 # Outputs:
 #   tag         v<version>
 #   version     <version> without "v"
@@ -122,6 +124,10 @@ on:
         default: ""
       notes:
         description: Release notes used as is; empty generates them.
+        type: string
+        default: ""
+      commit-format:
+        description: "Commit format the bump=auto and the release notes read: gitsym, cc (Conventional Commits) or gitmoji. Empty reads gitsym, then Conventional Commits."
         type: string
         default: ""
     outputs:
@@ -202,6 +208,7 @@ jobs:
         env:
           BUMP: ${{ inputs.bump }}
           VERSION: ${{ inputs.version }}
+          COMMIT_FORMAT: ${{ inputs.commit-format }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: node "$CENTRAL/scripts/release-version.mjs"
 
@@ -279,9 +286,11 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           PREV_TAG: ${{ steps.version.outputs.prev_tag }}
           REPOSITORY: ${{ github.repository }}
+          COMMIT_FORMAT: ${{ inputs.commit-format }}
         run: |
           node "$CENTRAL/scripts/generate-release-notes.mjs" \
             --version "$VERSION" \
+            --commit-format "$COMMIT_FORMAT" \
             --commits-file "$NOTES_DIR/git-commits.txt" \
             --prs-file "$NOTES_DIR/pr-data.json" \
             --repo "$REPOSITORY" \

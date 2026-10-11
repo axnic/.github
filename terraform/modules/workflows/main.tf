@@ -8,7 +8,24 @@
 # apply, or `depends_on` on the repository at the call site).
 
 locals {
-  s = var.settings
+  # Commit messages written by Terraform and by e2e.sync, per commit format. The scope `ci` is the
+  # one repositories allow for such commits (gitmoji: the `:construction_worker:` code).
+  sync_messages = {
+    gitsym  = "=[ci]: Sync %s from axnic/.github"
+    cc      = "ci(ci): Sync %s from axnic/.github"
+    gitmoji = ":construction_worker: (ci): Sync %s from axnic/.github"
+  }
+  e2e_subjects = {
+    gitsym  = "=[ci]: Sync E2E callers"
+    cc      = "ci(ci): Sync E2E callers"
+    gitmoji = ":construction_worker: (ci): Sync E2E callers"
+  }
+  commit_message = coalesce(var.commit_message, local.sync_messages[var.commit_format])
+
+  # The settings with the format-derived defaults filled in.
+  s = merge(var.settings, {
+    e2e_commit_subject = coalesce(var.settings.e2e_commit_subject, local.e2e_subjects[var.commit_format])
+  })
 
   # The catalog of central workflows lives in catalog.tf (`local.catalog`).
 
@@ -106,6 +123,7 @@ locals {
         central        = local.central
         publish_jobs   = local.publish_jobs
         publishes      = local.publishes
+        commit_format  = var.commit_format
         publish_header = join("\n", [for p in local.publishes : local.publish_header[p]])
         publish_text   = join("; ", [for p in local.publishes : local.publish_summary[p]])
         caller         = "${join(",", sort(c.triggers))}.${c.action}.yaml"
@@ -210,7 +228,7 @@ resource "github_repository_file" "caller" {
   branch              = coalesce(var.branch, var.default_branch)
   file                = ".github/workflows/${each.key}"
   content             = each.value.content
-  commit_message      = format(var.commit_message, each.key)
+  commit_message      = format(local.commit_message, each.key)
   overwrite_on_create = true
 
   # Commit the callers only once the guard passed.
