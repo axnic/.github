@@ -189,4 +189,12 @@ module "gitsym" {
   workflow_params = {
     scan_languages = ["javascript-typescript"]
   }
+
+  # Organisation admins may push straight to main (static repository, single maintainer): the
+  # ruleset still applies to everyone else.
+  ruleset_bypass_actors = [{
+    actor_id    = 1 # OrganizationAdmin
+    actor_type  = "OrganizationAdmin"
+    bypass_mode = "always"
+  }]
 }
