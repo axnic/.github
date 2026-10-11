@@ -34,6 +34,7 @@ locals {
     module.pulumi_pocket_id.project_info,
     merge(module.medieval_claude.project_info, { type = "other" }),
     merge(module.argocd_extension_application_map.project_info, { type = "other" }),
+    merge(module.gitsym.project_info, { type = "other" }),
   ]
 }
 
@@ -165,4 +166,27 @@ module "argocd_extension_application_map" {
 
   # Bot secrets: see ci_app.tf.
   ruleset_bypass_actors = local.ci_bypass_actors
+}
+
+# ---------------------------------------------------------------------------
+# gitsym — Git convention built on Conventional Commits and gitmoji (Node.js), created by Terraform.
+# ---------------------------------------------------------------------------
+module "gitsym" {
+  source    = "../modules/repository/base"
+  providers = { github = github, toml = toml }
+
+  name        = "gitsym"
+  description = "Conventional Commits meets gitmoji: a git convention that reads at a glance, with its commitlint config."
+  features    = ["issues"]
+
+  # Central CI callers: none for the first apply (the repository does not exist yet, and the
+  # plan-time guard reads its default branch). Then enable ["core", "security"] once
+  # `ci:commitlint` and `security:audit` are on that branch. Static repository: no PR-Agent.
+  # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
+  terraform_app_id = var.github_app_id
+  workflow_groups  = []
+  # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
+  workflow_params = {
+    scan_languages = ["javascript-typescript"]
+  }
 }
