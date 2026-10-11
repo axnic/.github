@@ -7,6 +7,7 @@
 - [Conventions](Conventions.md)
 - [Releases](Releases.md)
 - [Mise-Tasks](Mise-Tasks.md)
+- [Workflow-Groups](Workflow-Groups.md)
 - [Adding-A-Repo](Adding-A-Repo.md)
 - [CI-GitHub-App](CI-GitHub-App.md)
 

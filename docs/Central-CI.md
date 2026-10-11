@@ -35,6 +35,8 @@ General:
 - [Conventions](Conventions.md): file naming, house style, why callers follow `@main`, security rules,
   commit conventions.
 - [Mise-Tasks](Mise-Tasks.md): the mise tasks a repository must define, and which workflow needs which.
+- [Workflow-Groups](Workflow-Groups.md): for each group, its callers, the mise tasks to define and what
+  each must do.
 - [Renovate](Renovate.md): the shared Renovate presets and how dependency updates are merged.
 - [Releases](Releases.md): the two-stage release, recovery, verification of the artifacts.
 - [Adding-A-Repo](Adding-A-Repo.md): enabling groups for a repository in Terraform, and the manual prerequisites.
@@ -46,7 +48,7 @@ Workflows, by group:
 | `core`      | [core.qa](core.qa.md), [core.review](core.review.md), [core.scan](core.scan.md)                                                                                     |
 | `issues`    | [issues.stale](issues.stale.md) (opt-in)                                                                                                                            |
 | `go`        | [go.test](go.test.md), [go.publish](go.publish.md)                                                                                                                  |
-| `release:*` | [release.prepare](release.prepare.md) plus the publish part: `release:go`, `release:nodejs`, `release:pulumi`, `release:argocd-extension` ([Releases](Releases.md)) |
+| `release:*` | [release.prepare](release.prepare.md) plus the publish part: `release:go`, `release:npm`, `release:pulumi`, `release:argocd-extension` ([Releases](Releases.md)) |
 | `pulumi`    | [pulumi.publish](pulumi.publish.md), [pulumi.codegen](pulumi.codegen.md) (the `pulumi` group includes `go`)                                                         |
 | `security`  | [security.audit](security.audit.md), [security.osv](security.osv.md)                                                                                                |
 | `oss`       | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) (opt-in, public repositories)                                                                      |

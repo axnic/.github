@@ -1,6 +1,6 @@
 # release.prepare - Release (stage 1 of 2)
 
-Groups `release:go`, `release:nodejs`, `release:pulumi` and `release:argocd-extension` (each includes this job). Central workflow:
+Groups `release:go`, `release:npm`, `release:pulumi` and `release:argocd-extension` (each includes this job). Central workflow:
 `.github/workflows/release.prepare.yaml`. First job of every repository's release caller. The whole
 process, including recovery and verification, is described in [Releases](Releases.md).
 

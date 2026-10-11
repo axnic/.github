@@ -17,6 +17,7 @@ For the list of projects, see the [organisation profile](https://github.com/axni
 | [Conventions](Conventions.md)     | File naming, workflow house style, security rules and commit conventions.               |
 | [Releases](Releases.md)           | The two-stage release process, recovery and verification of the artifacts.              |
 | [Mise-Tasks](Mise-Tasks.md)       | The mise tasks a repository must define for the central workflows.                      |
+| [Workflow-Groups](Workflow-Groups.md) | For each group: its callers, the mise tasks to define and what they must do.            |
 | [Adding-A-Repo](Adding-A-Repo.md) | Enabling the groups of workflows for a new repository.                                  |
 
 ## Repository layout

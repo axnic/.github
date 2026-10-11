@@ -5,11 +5,11 @@ A release is cut from one caller, `workflow_dispatch.release.yaml`, with two cha
 | Stage | Job       | Workflow                                                                                   | Result                                                                     |
 | ----- | --------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | 1     | `prepare` | [release.prepare](release.prepare.md)                                                      | version computed, checks run, annotated tag pushed, **draft** release with notes |
-| 2     | publish   | [go.publish](go.publish.md) (`release:go`), [pulumi.publish](pulumi.publish.md) (`release:pulumi`), or jobs generated into the caller (`release:nodejs`, `release:argocd-extension`) | artifacts built, signed and attached; packages pushed to the registries    |
+| 2     | publish   | [go.publish](go.publish.md) (`release:go`), [pulumi.publish](pulumi.publish.md) (`release:pulumi`), or jobs generated into the caller (`release:npm`, `release:argocd-extension`) | artifacts built, signed and attached; packages pushed to the registries    |
 
-The stage 2 part depends on the enabled Terraform group: `release:go`, `release:nodejs`,
+The stage 2 part depends on the enabled Terraform group: `release:go`, `release:npm`,
 `release:pulumi` or `release:argocd-extension` (`release:pulumi` cannot be combined with `release:go` or
-`release:nodejs`; `release:nodejs` and `release:argocd-extension` can share one caller).
+`release:npm`; `release:npm` and `release:argocd-extension` can share one caller).
 
 Both stages are in **one caller** on purpose: the tag is pushed with `GITHUB_TOKEN`, and a push made
 with it never triggers another workflow. A separate "on tag" workflow would therefore never start.
@@ -89,12 +89,16 @@ Pulumi releases are published without a manual review of the notes, because `pul
 can only download the provider from a published release and the SDKs are public as soon as they are
 pushed. The SDK jobs run only for the languages listed in the `sdks` input.
 
-### Node.js packages (`release:nodejs`, job `npm` generated into the caller)
+### npm packages (`release:npm`, job `npm` generated into the caller)
 
 Sets the version from the tag (`npm version`), runs `mise run ci:build`, then `npm stage publish`
 (dist-tag `next` for a prerelease). The version is only **staged**: a maintainer approves it with 2FA
 (`npm stage approve <stage-id>` or the *Staged Packages* tab of npmjs.com). Trusted publishing (OIDC),
 `NPM_TOKEN` as fallback. Needs the mise tasks `ci` and `ci:build`.
+
+`mise run ci:build` runs at the repository root, but `npm version` and `npm stage publish` run in
+`npm_dir` (default `.`), the directory of the `package.json` to publish. For a monorepo:
+`workflow_params = { npm_dir = "packages/commitlint" }`.
 
 ### Argo CD extensions (`release:argocd-extension`, job `extension` generated into the caller)
 
