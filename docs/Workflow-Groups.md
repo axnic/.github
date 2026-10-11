@@ -22,7 +22,7 @@ templates in `.github/workflows/templates/` and the banner of each reusable work
 | `e2e`                      | `schedule,workflow_dispatch.e2e-sync.yaml`, then one `merge_group,pull_request,push.e2e-<version>.yaml` per version        | `ci:e2e`, `ci:e2e:versions`     |
 | `wiki`                     | `push,workflow_dispatch.wiki.yaml`                                                                                         | none                            |
 | `release:go`               | `workflow_dispatch.release.yaml` (`prepare` + `publish`)                                                                   | `ci`                            |
-| `release:npm`           | `workflow_dispatch.release.yaml` (`prepare` + `npm`)                                                                       | `ci`, `ci:build`                |
+| `release:npm`           | `workflow_dispatch.release.yaml` (`prepare` + `npm` + `version`)                                                                       | `ci`, `ci:build`                |
 | `release:pulumi`           | `workflow_dispatch.release.yaml` (`prepare` + Pulumi publish jobs)                                                         | `ci`                            |
 | `release:argocd-extension` | `workflow_dispatch.release.yaml` (`prepare` + `extension`)                                                                 | `ci`, `ci:build`                |
 
@@ -244,14 +244,24 @@ deterministic).
   `npm stage publish --provenance` (dist-tag `next` for a prerelease, `latest` otherwise). The version is
   only **staged**: a maintainer approves it with 2FA (`npm stage approve <stage-id>` or the *Staged
   Packages* tab on npmjs.com).
+- **Version commit**: job `version`, generated into the caller after `prepare` and `npm`. Commits the
+  released version to the `package.json` of `npm_dir` on the default branch, as `axnic-bot[bot]`. Skipped
+  for a prerelease and when `package.json` already has the version; pushes with a few rebase retries. The
+  tag points at the release commit before this bump. See [Releases](Releases.md#npm-packages-releasenpm-job-npm-generated-into-the-caller).
 - **Settings**: `npm_dir` (default `.`): directory of the `package.json` to version and publish, relative
   to the repository root, e.g. `workflow_params = { npm_dir = "packages/commitlint" }` for a monorepo.
+  `npm_commit_version` (default `true`): `false` drops the `version` job. `npm_commit_message`: commit
+  message of the `version` job (`%s` = version), default derived from `commit_format`; it must satisfy
+  the repository's commitlint.
 - **Tasks**: `ci` and `ci:build`. `ci:build` runs at the repository root and must produce the package in a
   state `npm stage publish` can publish from `npm_dir` (`npm version` and `npm stage publish` run there,
   after the version is set).
 - **Prerequisites**: npm **trusted publishing** configured on npmjs.com for the repository and the workflow
   file `workflow_dispatch.release.yaml`, or the secret `NPM_TOKEN` as a fallback. A version already on npm
-  cannot be reused and is skipped.
+  cannot be reused and is skipped. The `version` job needs the [CI GitHub App](CI-GitHub-App.md)
+  (secrets `CI_APP_ID` / `CI_APP_PRIVATE_KEY` via `ci_bot_repos` in `terraform/live/ci_app.tf`) and the
+  repository's `ruleset_bypass_actors = local.ci_bypass_actors`; without the secrets it fails with an
+  explicit error. Set `npm_commit_version = false` to do without it.
 - **Tests**: none beyond what `ci` runs (see [Summary](#summary)).
 
 ### release:pulumi

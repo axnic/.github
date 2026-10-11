@@ -94,6 +94,9 @@ Secrets are scoped **per repository** — not org-wide. Only repos listed in
 
 ## 5. Use the app in a release workflow
 
+Example in this organisation: the `version` job of `release:npm` commits the released version to
+`package.json` on the default branch (see [Releases](Releases.md)).
+
 Use [`actions/create-github-app-token`](https://github.com/actions/create-github-app-token)
 to exchange the private key for a short-lived installation token, then
 configure Git to use it before pushing.

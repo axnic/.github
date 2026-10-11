@@ -116,6 +116,29 @@ Sets the version from the tag (`npm version`), runs `mise run ci:build`, then `n
 `npm_dir` (default `.`), the directory of the `package.json` to publish. For a monorepo:
 `workflow_params = { npm_dir = "packages/commitlint" }`.
 
+After the release, the job `version` (after `prepare` and `npm`) commits the released version to the
+`package.json` of `npm_dir` on the default branch, as `axnic-bot[bot]`. The tag points at the release
+commit **before** that bump (the `npm` job sets the version in place from the tag at publish time), so
+`package.json` on the default branch catches up right after the release. The job:
+
+- is skipped for a prerelease (release candidate), and silently when `package.json` already has the version;
+- pushes with a few rebase retries if the branch moved;
+- needs the [CI GitHub App](CI-GitHub-App.md): the repository must be in `ci_bot_repos` (secrets
+  `CI_APP_ID` / `CI_APP_PRIVATE_KEY`) and have `ruleset_bypass_actors = local.ci_bypass_actors` in its
+  module block. Without the secrets the job fails with an explicit error.
+
+`npm_commit_version = false` drops the job. `npm_commit_message` sets the commit message (`%s` is the
+version); it must satisfy the repository's commitlint. Default derived from `commit_format`:
+
+| `commit_format` | Default message                          |
+| --------------- | ---------------------------------------- |
+| `gitsym`        | `=[release]: Bump the version to %s`     |
+| `cc`            | `chore(release): Bump the version to %s` |
+| `gitmoji`       | `:bookmark: (release): Bump the version to %s` |
+
+A repository whose commitlint has no `release` scope overrides it, e.g. gitsym sets
+`npm_commit_message = "=[commitlint]: Bump the package version to %s"`.
+
 ### Argo CD extensions (`release:argocd-extension`, job `extension` generated into the caller)
 
 `mise run ci:build` must produce the bundle at `settings.extension_archive` (default `dist/extension.tar`).

@@ -38,7 +38,9 @@ repository's module call for what is actually enabled.
 
 The `release:*` groups all generate the same caller (`prepare` job included); each adds its publish part
 to it. `release:pulumi` cannot be combined with `release:go` or `release:npm` (validation);
-`release:npm` and `release:argocd-extension` can share one caller.
+`release:npm` and `release:argocd-extension` can share one caller. A repository using `release:npm` also needs the [CI GitHub App](CI-GitHub-App.md)
+(`ci_bot_repos` and `ruleset_bypass_actors = local.ci_bypass_actors`) for the `version` job, unless it
+sets `npm_commit_version = false`.
 
 The `core.review` caller (`review`) is only generated for a repository that has an OpenRouter key
 (`pr_agent_enabled`, below).
@@ -78,6 +80,8 @@ to the caller, since central workflows only have `workflow_call`.
 | `scorecard_cron`, `welcome_message`                      | [oss.scorecard](oss.scorecard.md), [oss.welcome](oss.welcome.md) | `0 5 * * 1`                     |
 | `extension_archive`                                      | [release:argocd-extension](Releases.md#argo-cd-extensions)       | `dist/extension.tar`            |
 | `npm_dir`                                                | `release:npm` ([Releases](Releases.md))                          | `.`                             |
+| `npm_commit_version`                                     | `release:npm` ([Releases](Releases.md))                          | `true`                          |
+| `npm_commit_message`                                     | `release:npm` ([Releases](Releases.md)), `%s` = version          | derived from `commit_format`    |
 | `pulumi_sdks`                                            | [pulumi.publish](pulumi.publish.md)                              | central default                 |
 | `e2e_sync_cron`, `e2e_readme_path`, `e2e_commit_subject` | [e2e.sync](e2e.sync.md)                                          | `0 3 * * 1`; subject derived from `commit_format` |
 | `wiki_docs_dir`                                          | [wiki.publish](wiki.publish.md)                                  | `docs`                          |
