@@ -682,12 +682,14 @@ run "callers_pin_central_workflows_to_a_commit" {
   }
 }
 
-# 15) release:nodejs: prepare plus an npm job in the caller (staged publish), no go.publish.
-run "release_nodejs" {
+# 15) release:npm: prepare plus an npm job in the caller (staged publish), no go.publish.
+# The package directory is settings.npm_dir (root by default).
+run "release_npm" {
   command = plan
 
   variables {
-    workflow_groups = ["release:nodejs"]
+    workflow_groups = ["release:npm"]
+    settings        = { npm_dir = "packages/commitlint" }
   }
 
   assert {
@@ -696,11 +698,12 @@ run "release_nodejs" {
         "  npm:\n    name: 📦 npm package\n    needs: prepare\n",
         "npm stage publish --access public --provenance --tag \"$DIST_TAG\"",
         "npm version \"$VERSION\" --no-git-tag-version --allow-same-version",
+        "working-directory: packages/commitlint\n",
         "#   npm — build the package and stage it on npm",
         "# Requires the mise task: ci, ci:build.",
       ] : strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, s)
     ]) && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "go.publish") && !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  provider:\n")
-    error_message = "release:nodejs must generate the npm job only"
+    error_message = "release:npm must generate the npm job only"
   }
 }
 
@@ -727,11 +730,11 @@ run "release_argocd_extension" {
 }
 
 # 17) Several modes in one caller: nodejs and argocd-extension side by side.
-run "release_nodejs_and_extension" {
+run "release_npm_and_extension" {
   command = plan
 
   variables {
-    workflow_groups = ["release:nodejs", "release:argocd-extension"]
+    workflow_groups = ["release:npm", "release:argocd-extension"]
   }
 
   assert {
@@ -745,7 +748,7 @@ run "release_pulumi_exclusive" {
   command = plan
 
   variables {
-    workflow_groups = ["release:pulumi", "release:nodejs"]
+    workflow_groups = ["release:pulumi", "release:npm"]
   }
 
   expect_failures = [var.workflow_groups]

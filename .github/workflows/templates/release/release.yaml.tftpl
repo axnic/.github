@@ -6,7 +6,7 @@
 # Triggered manually (Actions → Release → Run workflow). Set either `bump` or `version`,
 # not both. prepare runs `mise run ci`, computes the version, writes the notes and pushes
 # the tag; ${publish_text}.
-# Requires the mise task: ci${contains(publishes, "nodejs") || contains(publishes, "argocd-extension") ? ", ci:build" : ""}.
+# Requires the mise task: ci${contains(publishes, "npm") || contains(publishes, "argocd-extension") ? ", ci:build" : ""}.
 #
 # Jobs:
 #   prepare — run `mise run ci`, compute the version, write the notes, push the tag

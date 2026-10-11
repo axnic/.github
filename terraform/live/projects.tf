@@ -154,7 +154,7 @@ module "argocd_extension_application_map" {
   # Central CI callers, while the repository migrates off its own workflows.
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = ["core", "security", "oss", "release:nodejs", "release:argocd-extension"]
+  workflow_groups  = ["core", "security", "oss", "release:npm", "release:argocd-extension"]
   # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
   workflow_params = {
     scan_languages = ["javascript-typescript"]

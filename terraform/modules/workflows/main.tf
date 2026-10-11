@@ -43,7 +43,7 @@ locals {
   publish_tasks = {
     go                 = []
     pulumi             = []
-    nodejs             = ["ci:build"]
+    npm                = ["ci:build"]
     "argocd-extension" = ["ci:build"]
   }
 
@@ -51,13 +51,13 @@ locals {
   publish_summary = {
     go                 = "publish (go.publish) builds the artifacts of the draft GitHub Release and leaves it in draft for review"
     pulumi             = "the publish jobs below build the provider, publish the GitHub Release (out of draft, so `pulumi plugin install` can download the provider) and push the SDKs"
-    nodejs             = "the npm job stages the package on npm (a maintainer approves it with 2FA)"
+    npm                = "the npm job stages the package on npm (a maintainer approves it with 2FA)"
     "argocd-extension" = "the extension job attaches the Argo CD extension bundle, its checksums and provenance to the draft GitHub Release"
   }
   publish_header = {
     go                 = "#   publish — build the artifacts of the draft GitHub Release, from go.publish"
     pulumi             = "#   provider, go-sdk, nodejs, python, dotnet — publication, in this file: npm and NuGet trusted\n#             publishing only match a workflow of the repository itself, not a reusable one"
-    nodejs             = "#   npm — build the package and stage it on npm, in this file: npm trusted publishing only\n#             matches a workflow of the repository itself, not a reusable one"
+    npm                = "#   npm — build the package and stage it on npm, in this file: npm trusted publishing only\n#             matches a workflow of the repository itself, not a reusable one"
     "argocd-extension" = "#   extension — build the Argo CD extension bundle, attach it to the draft GitHub Release"
   }
 

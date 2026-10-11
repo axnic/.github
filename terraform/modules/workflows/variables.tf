@@ -42,21 +42,21 @@ variable "branch" {
 # shared prepare job plus the publish part of each mode (one or several, see the validations).
 variable "workflow_groups" {
   type        = list(string)
-  description = "Workflow groups to enable: core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:nodejs, release:pulumi, release:argocd-extension."
+  description = "Workflow groups to enable: core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:npm, release:pulumi, release:argocd-extension."
   default     = []
 
   validation {
     condition = alltrue([
       for g in var.workflow_groups :
-      contains(["core", "issues", "go", "pulumi", "security", "oss", "e2e", "wiki", "release:go", "release:nodejs", "release:pulumi", "release:argocd-extension"], g)
+      contains(["core", "issues", "go", "pulumi", "security", "oss", "e2e", "wiki", "release:go", "release:npm", "release:pulumi", "release:argocd-extension"], g)
     ])
-    error_message = "workflow_groups may only include core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:nodejs, release:pulumi, release:argocd-extension."
+    error_message = "workflow_groups may only include core, issues, go, pulumi, security, oss, e2e, wiki, release:go, release:npm, release:pulumi, release:argocd-extension."
   }
 
   # release:pulumi publishes the GitHub Release and the npm SDK itself.
   validation {
-    condition     = !contains(var.workflow_groups, "release:pulumi") || !anytrue([contains(var.workflow_groups, "release:go"), contains(var.workflow_groups, "release:nodejs")])
-    error_message = "repo ${var.repository}: release:pulumi cannot be combined with release:go or release:nodejs (it already builds the provider and publishes its npm SDK)."
+    condition     = !contains(var.workflow_groups, "release:pulumi") || !anytrue([contains(var.workflow_groups, "release:go"), contains(var.workflow_groups, "release:npm")])
+    error_message = "repo ${var.repository}: release:pulumi cannot be combined with release:go or release:npm (it already builds the provider and publishes its npm SDK)."
   }
 
   validation {
@@ -163,6 +163,8 @@ variable "settings" {
     pulumi_sdks = optional(list(string)) # input `sdks`
     # release:argocd-extension: bundle produced by `mise run ci:build`, attached to the release
     extension_archive = optional(string, "dist/extension.tar")
+    # release:npm: directory of the package to publish (package.json), relative to the repository root
+    npm_dir = optional(string, ".")
     # e2e.sync
     e2e_sync_cron      = optional(string, "0 3 * * 1") # Monday 03:00 UTC
     e2e_readme_path    = optional(string)              # input `readme-path`
@@ -185,6 +187,11 @@ variable "settings" {
   validation {
     condition     = alltrue([for p in var.settings.go_paths : can(regex("^[^\"\\\\\n]+$", p))])
     error_message = "settings.go_paths entries must be non-empty and contain no double quote, backslash or newline."
+  }
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._-][A-Za-z0-9._/-]*$", var.settings.npm_dir))
+    error_message = "settings.npm_dir may only contain letters, digits, '.', '_', '/' and '-' (no leading '/')."
   }
 
   validation {
