@@ -201,13 +201,15 @@ module "gitsym" {
     scan_languages = ["javascript-typescript"]
     # The npm package lives in a sub-directory.
     npm_dir = "packages/commitlint"
+    # The release commits the version to package.json; `release` is not one of the scopes of the repository.
+    npm_commit_message = "=[commitlint]: Bump the package version to %s"
   }
 
-  # Organisation admins may push straight to main (static repository, single maintainer): the
-  # ruleset still applies to everyone else.
-  ruleset_bypass_actors = [{
+  # Organisation admins may push straight to main (static repository, single maintainer), and
+  # axnic-bot commits the released version (release:npm); the ruleset still applies to everyone else.
+  ruleset_bypass_actors = concat([{
     actor_id    = 1 # OrganizationAdmin
     actor_type  = "OrganizationAdmin"
     bypass_mode = "always"
-  }]
+  }], local.ci_bypass_actors)
 }

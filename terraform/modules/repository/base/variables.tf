@@ -294,7 +294,7 @@ variable "workflow_params" {
         "go_paths", "go_os", "review_model", "review_fallback_model", "scan_cron", "scan_languages",
         "stale_cron", "stale_days", "stale_close_days",
         "audit_cron", "osv_cron", "scorecard_cron", "welcome_message", "pulumi_sdks", "e2e_sync_cron",
-        "e2e_readme_path", "e2e_commit_subject", "wiki_docs_dir", "extension_archive", "npm_dir",
+        "e2e_readme_path", "e2e_commit_subject", "wiki_docs_dir", "extension_archive", "npm_dir", "npm_commit_version", "npm_commit_message",
       ], k)
     ])
     error_message = "workflow_params keys must be attributes of modules/workflows var.settings (keep this list in sync)."

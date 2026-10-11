@@ -165,6 +165,10 @@ variable "settings" {
     extension_archive = optional(string, "dist/extension.tar")
     # release:npm: directory of the package to publish (package.json), relative to the repository root
     npm_dir = optional(string, ".")
+    # release:npm: commit the released version to package.json on the default branch (as axnic-bot,
+    # which must bypass the ruleset: CI app secrets and ruleset_bypass_actors). `%s` = the version.
+    npm_commit_version = optional(bool, true)
+    npm_commit_message = optional(string) # default derived from commit_format
     # e2e.sync
     e2e_sync_cron      = optional(string, "0 3 * * 1") # Monday 03:00 UTC
     e2e_readme_path    = optional(string)              # input `readme-path`

@@ -20,11 +20,17 @@ locals {
     cc      = "ci(ci): Sync E2E callers"
     gitmoji = ":construction_worker: (ci): Sync E2E callers"
   }
+  version_messages = {
+    gitsym  = "=[release]: Bump the version to %s"
+    cc      = "chore(release): Bump the version to %s"
+    gitmoji = ":bookmark: (release): Bump the version to %s"
+  }
   commit_message = coalesce(var.commit_message, local.sync_messages[var.commit_format])
 
   # The settings with the format-derived defaults filled in.
   s = merge(var.settings, {
     e2e_commit_subject = coalesce(var.settings.e2e_commit_subject, local.e2e_subjects[var.commit_format])
+    npm_commit_message = coalesce(var.settings.npm_commit_message, local.version_messages[var.commit_format])
   })
 
   # The catalog of central workflows lives in catalog.tf (`local.catalog`).
@@ -51,8 +57,10 @@ locals {
   # fixed job in release.yaml.tftpl); the others are jobs generated into the caller itself.
   publish_jobs = join("\n\n", [
     for p in local.publishes : trimsuffix(templatefile("${path.module}/templates/release/${p}-publish-jobs.yaml.tftpl", {
-      sdks = local.pulumi_sdks
-      y    = local.y
+      sdks           = local.pulumi_sdks
+      y              = local.y
+      settings       = local.s
+      default_branch = var.default_branch
     }), "\n") if p != "go"
   ])
 

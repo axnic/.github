@@ -868,3 +868,56 @@ run "commit_format_unknown" {
 
   expect_failures = [var.commit_format]
 }
+
+# 20) release:npm commits the released version through the GitHub App (job `version`), unless switched off.
+run "release_npm_commits_version" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:npm"]
+    settings        = { npm_dir = "packages/commitlint" }
+  }
+
+  assert {
+    condition = alltrue([
+      for s in [
+        "  version:\n    name: 🏷️ Commit the version\n    needs: [prepare, npm]\n",
+        "if: needs.prepare.outputs.prerelease != 'true'",
+        "actions/create-github-app-token@",
+        "ref: main\n",
+        "MESSAGE_FORMAT: \"=[release]: Bump the version to %s\"\n",
+        "PACKAGE_DIR: packages/commitlint\n",
+        "git commit --all --message \"$${MESSAGE_FORMAT//%s/$VERSION}\"",
+      ] : strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, s)
+    ])
+    error_message = "release:npm must commit the version to the default branch through the GitHub App"
+  }
+}
+
+run "release_npm_version_commit_off" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:npm"]
+    settings        = { npm_commit_version = false }
+  }
+
+  assert {
+    condition     = !strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "Commit the version") && strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "  npm:\n")
+    error_message = "npm_commit_version = false must drop the version job"
+  }
+}
+
+run "release_npm_version_message_per_format" {
+  command = plan
+
+  variables {
+    workflow_groups = ["release:npm"]
+    commit_format   = "gitmoji"
+  }
+
+  assert {
+    condition     = strcontains(github_repository_file.caller["workflow_dispatch.release.yaml"].content, "MESSAGE_FORMAT: \":bookmark: (release): Bump the version to %s\"\n")
+    error_message = "the version commit message must follow the commit format"
+  }
+}
