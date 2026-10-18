@@ -226,8 +226,7 @@ module "n8n_nodes_paperless" {
   description = "n8n community node to manage your documents with Paperless-ngx."
   features    = ["issues"]
 
-  # Gitmoji (`:code:(scope): Subject`), enforced by the repository's commitlint.
-  commit_format = "gitmoji"
+  # Commit format: gitsym (the default), enforced by the repository's commitlint.
 
   # Central CI callers: core (eslint through ci:lint, rtunk, commitlint, CodeQL) and security.
   # No release group yet: the package is still named @n8n-chezmoi-sh/..., and npm trusted
