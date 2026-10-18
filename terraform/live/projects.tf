@@ -228,12 +228,13 @@ module "n8n_nodes_paperless" {
 
   # Commit format: gitsym (the default), enforced by the repository's commitlint.
 
-  # Central CI callers: core (eslint through ci:lint, rtunk, commitlint, CodeQL) and security.
+  # Central CI callers: core (eslint through ci:lint, rtunk, commitlint, CodeQL), security and e2e
+  # (the node against Paperless-ngx 2.20 to 3.3: the callers per version are managed by e2e.sync).
   # No release group yet: the package is still named @n8n-chezmoi-sh/..., and npm trusted
   # publishing has to be set up first (see release:npm).
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = ["core", "security"]
+  workflow_groups  = ["core", "security", "e2e"]
   # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
   workflow_params = {
     scan_languages = ["javascript-typescript"]
