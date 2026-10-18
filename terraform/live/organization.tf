@@ -5,6 +5,8 @@ module "org_readme" {
   source = "../modules/org_readme"
 
   projects = local.all_projects
+  # Shown first in the private profile, in this order.
+  featured = ["gitsym", "rtunk"]
 
   public_links  = []
   private_links = []

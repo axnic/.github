@@ -16,6 +16,12 @@ variable "private_links" {
   default     = []
 }
 
+variable "featured" {
+  type        = list(string)
+  description = "Names of the projects shown first on the private profile, in this order."
+  default     = []
+}
+
 variable "projects" {
   description = "List of project_info objects collected from all repository/* modules."
   type = list(object({
