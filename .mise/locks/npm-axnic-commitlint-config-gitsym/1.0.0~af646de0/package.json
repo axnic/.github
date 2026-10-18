@@ -1,0 +1,7 @@
+{
+  "name": "mise-npm-install",
+  "private": true,
+  "dependencies": {
+    "@axnic/commitlint-config-gitsym": "1.0.0"
+  }
+}

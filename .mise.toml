@@ -7,7 +7,6 @@
 # First run:
 #   mise trust      # Trust this config (prompted on first use)
 #   mise install    # Install all pinned tools
-#   pnpm install    # Install commitlint (dev tooling only)
 #
 # Daily workflow:
 #   mise run lint        # Check everything with rtunk
@@ -58,18 +57,10 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 node = "lts"     # JavaScript runtime — required by commitlint
 pnpm = "10.33"   # Package manager — installs commitlint dev deps
 "npm:@commitlint/cli" = "latest" # Commit convention check, drives .commitlintrc.js (`ci:commitlint`)
-"npm:@axnic/commitlint-config-gitsym" = "latest" # gitsym commit format, extended by .commitlintrc.js
+# gitsym commit format, extended by .commitlintrc.js. allow_low_downloads: our own package, younger than minimumPackageAge.
+"npm:@axnic/commitlint-config-gitsym" = { version = "latest", allow_low_downloads = true }
 terraform = "latest" # Terraform CLI: local fmt/validate/test only (apply runs in HCP Terraform)
 "github:axnic/rtunk" = "latest" # rtunk CLI (code quality platform, Trunk-compatible)
-
-# =============================================================================
-# Prepare
-# =============================================================================
-# Steps that run automatically after `mise install` (or `mise run prepare`).
-# =============================================================================
-
-[prepare.pnpm]
-auto = true
 
 # =============================================================================
 # Linters
@@ -97,13 +88,22 @@ run = "rtunk check --fix ."
 # Config: .commitlintrc.js
 # -----------------------------------------------------------------------------
 
+# commitlint resolves `extends` from the repository, not from mise's install directory: link the
+# shared gitsym config in as node_modules (ignored by git).
+[tasks."commitlint:link"]
+description = "Make the gitsym commitlint config resolvable from the repository"
+hide = true
+run = 'ln -sfn "$(mise where npm:@axnic/commitlint-config-gitsym)/node_modules" node_modules'
+
 [tasks."lint:commitlint"]
 description = "Validate the last commit message against the gitsym format"
 alias = "lc"
+depends = ["commitlint:link"]
 run = "commitlint --from HEAD~1 --to HEAD --verbose"
 
 [tasks."ci:commitlint"]
 description = "Validate commit messages in a range (usage: mise run ci:commitlint -- --from <sha> --to <sha> | --last)"
+depends = ["commitlint:link"]
 run = "commitlint --verbose"
 
 # -----------------------------------------------------------------------------

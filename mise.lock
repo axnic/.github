@@ -76,6 +76,15 @@ url = "https://nodejs.org/dist/v24.18.0/node-v24.18.0-darwin-x64.tar.gz"
 checksum = "sha256:0ae68406b42d7725661da979b1403ec9926da205c6770827f33aac9d8f26e821"
 url = "https://nodejs.org/dist/v24.18.0/node-v24.18.0-win-x64.zip"
 
+[[tools."npm:@axnic/commitlint-config-gitsym"]]
+version = "1.0.0"
+aube = { path = ".mise/locks/npm-axnic-commitlint-config-gitsym/1.0.0~af646de0", digest = "sha256:967ceddd035ae51d28b02373ca2360af1690ae820750b958d57c32714e7b98ec" }
+backend = "npm:@axnic/commitlint-config-gitsym"
+specifiers = ["latest"]
+
+[tools."npm:@axnic/commitlint-config-gitsym".options]
+allow_low_downloads = "true"
+
 [[tools."npm:@commitlint/cli"]]
 version = "21.2.3"
 aube = { path = ".mise/locks/npm-commitlint-cli/21.2.3", digest = "sha256:7649878a4ad6dc7c20208c324f65d673efc2c7b955f02489f36d70808e668cae" }
