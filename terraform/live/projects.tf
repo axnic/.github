@@ -35,7 +35,7 @@ locals {
     merge(module.medieval_claude.project_info, { type = "other" }),
     merge(module.argocd_extension_application_map.project_info, { type = "other" }),
     merge(module.gitsym.project_info, { type = "other" }),
-    merge(module.n8n_nodes_paperless.project_info, { type = "n8n_extension" }),
+    merge(module.n8n_nodes_paperless_ngx.project_info, { type = "n8n_extension" }),
   ]
 }
 
@@ -216,13 +216,19 @@ module "gitsym" {
 }
 
 # ---------------------------------------------------------------------------
-# n8n-nodes-paperless — n8n community node for Paperless-ngx (TypeScript), adopted via imports.tf.
+# n8n-nodes-paperless-ngx — n8n community node for Paperless-ngx (TypeScript), adopted via imports.tf.
 # ---------------------------------------------------------------------------
-module "n8n_nodes_paperless" {
+# The repository was named n8n-nodes-paperless before.
+moved {
+  from = module.n8n_nodes_paperless
+  to   = module.n8n_nodes_paperless_ngx
+}
+
+module "n8n_nodes_paperless_ngx" {
   source    = "../modules/repository/base"
   providers = { github = github, toml = toml }
 
-  name        = "n8n-nodes-paperless"
+  name        = "n8n-nodes-paperless-ngx"
   description = "n8n community node to manage your documents with Paperless-ngx."
   features    = ["issues"]
 

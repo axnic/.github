@@ -70,14 +70,14 @@ import {
 }
 
 import {
-  to = module.n8n_nodes_paperless.github_repository.this
-  id = "n8n-nodes-paperless"
+  to = module.n8n_nodes_paperless_ngx.github_repository.this
+  id = "n8n-nodes-paperless-ngx"
 }
 import {
-  to = module.n8n_nodes_paperless.github_branch_default.this
-  id = "n8n-nodes-paperless"
+  to = module.n8n_nodes_paperless_ngx.github_branch_default.this
+  id = "n8n-nodes-paperless-ngx"
 }
 import {
-  to = module.n8n_nodes_paperless.github_repository_dependabot_security_updates.this
-  id = "n8n-nodes-paperless"
+  to = module.n8n_nodes_paperless_ngx.github_repository_dependabot_security_updates.this
+  id = "n8n-nodes-paperless-ngx"
 }
