@@ -42,7 +42,9 @@ export function sync({ workflows, template, readme, versions }) {
   const have = new Set(existingVersions(workflows));
   const fresh = versions.filter((v) => !have.has(v));
   const tmpl = readFileSync(template, "utf8");
-  for (const v of fresh) writeFileSync(join(workflows, `${PREFIX}${v}.yaml`), tmpl.replaceAll("__VERSION__", v));
+  // A bare number ("2.20") must be quoted: YAML would read the input as the float 2.2.
+  const scalar = (v) => (/^[0-9]+(\.[0-9]+)?$/.test(v) ? `"${v}"` : v);
+  for (const v of fresh) writeFileSync(join(workflows, `${PREFIX}${v}.yaml`), tmpl.replace("version: __VERSION__", `version: ${scalar(v)}`).replaceAll("__VERSION__", v));
   if (fresh.length && readme && existsSync(readme)) writeFileSync(readme, insertRows(readFileSync(readme, "utf8"), fresh));
   return fresh;
 }

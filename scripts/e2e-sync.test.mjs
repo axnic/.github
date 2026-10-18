@@ -67,3 +67,14 @@ test("single-row table, CRLF endings and unsorted rows", () => {
   // appended after the LAST row, wherever it sorts
   assert.equal(insertRows(README(["v2.3.0", "v2.1.0"]), ["v2.4.0"]), README(["v2.3.0", "v2.1.0", "v2.4.0"]));
 });
+
+test("sync: a version that looks like a number is quoted in the caller", () => {
+  const dir = mkdtempSync(join(tmpdir(), "e2e-sync-"));
+  try {
+    sync({ workflows: dir, template: TEMPLATE, readme: null, versions: ["2.20", "3.0.5", "v2.3.0"] });
+    const version = (v) => readFileSync(join(dir, `merge_group,pull_request,push.e2e-${v}.yaml`), "utf8").match(/^ {6}version: (.+)$/m)[1];
+    assert.deepEqual(["2.20", "3.0.5", "v2.3.0"].map(version), ['"2.20"', "3.0.5", "v2.3.0"]);
+  } finally {
+    rmSync(dir, { recursive: true });
+  }
+});
