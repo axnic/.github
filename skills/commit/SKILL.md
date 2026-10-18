@@ -1,22 +1,22 @@
 ---
 name: commit
 description: >
-  Generates conventional commit messages for this project. Use when asked to
+  Generates gitsym commit messages for this project. Use when asked to
   commit changes, write a commit message, stage files, or prepare a commit.
-  Enforces conventional commit format with mandatory scope, WHY-focused body,
+  Enforces the gitsym format with mandatory scope, WHY-focused body,
   Co-authored-by transparency trailer, DCO sign-off, and cryptographic signature.
 compatibility: Requires git
 allowed-tools: Bash(git:*)
 ---
 
-# Conventional Commit Skill
+# Commit Skill
 
-This project follows [Conventional Commits](https://www.conventionalcommits.org/).
+This project follows [gitsym](https://github.com/axnic/gitsym): the type is one ASCII symbol.
 
 ## Commit format
 
 ```text
-<type>(<scope>): <Subject starting with uppercase>
+<type>[<scope>]: <Subject starting with uppercase>
 
 <body — one or more paragraphs explaining WHY>
 
@@ -25,19 +25,23 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 
 ## Types
 
-| Type       | When to use                                             |
-| ---------- | ------------------------------------------------------- |
-| `feat`     | A new feature or capability                             |
-| `fix`      | A bug fix                                               |
-| `docs`     | Documentation-only changes                              |
-| `style`    | Code style / formatting, no logic change                |
-| `refactor` | Code restructuring, no feature or bug fix               |
-| `perf`     | Performance improvement                                 |
-| `test`     | Add or update tests                                     |
-| `build`    | Build system, toolchain, or external dependency changes |
-| `ci`       | CI/CD configuration changes                             |
-| `chore`    | Maintenance that touches neither src nor tests          |
-| `revert`   | Reverts a previous commit                               |
+| Type | When to use                                              |
+| ---- | -------------------------------------------------------- |
+| `+`  | New feature, resource or file                            |
+| `-`  | Remove code, file or feature                             |
+| `~`  | Improvement of working behavior: performance, config     |
+| `!`  | Fix a bug                                                |
+| `=`  | No behavior change: refactor, style, tests, CI           |
+| `^`  | Dependency bump                                          |
+| `>`  | Move or rename                                           |
+| `<`  | Revert a previous commit                                 |
+| `@`  | Documentation only                                       |
+| `$`  | Security                                                 |
+| `?`  | Experiment                                               |
+| `*`  | Anything else                                            |
+
+Breaking changes: `+!`, `~!` or `-!`. The full table is in the
+[specification](https://github.com/axnic/gitsym/blob/main/docs/specification.md).
 
 ## Scopes
 

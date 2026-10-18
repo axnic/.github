@@ -22,7 +22,7 @@ an empty map. Updated the tests to cover the new case.
 ## Full commit example
 
 ```text
-feat(sdk): Add pipe composition helper for transform hooks
++[sdk]: Add pipe composition helper for transform hooks
 
 The SDK exposed individual transform hooks (t.trim, t.normalizeUrl, …)
 but provided no ergonomic way to chain them. Extension authors were
