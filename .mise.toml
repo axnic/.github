@@ -58,6 +58,7 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 node = "lts"     # JavaScript runtime — required by commitlint
 pnpm = "10.33"   # Package manager — installs commitlint dev deps
 "npm:@commitlint/cli" = "latest" # Commit convention check, drives .commitlintrc.js (`ci:commitlint`)
+"npm:@axnic/commitlint-config-gitsym" = "latest" # gitsym commit format, extended by .commitlintrc.js
 terraform = "latest" # Terraform CLI: local fmt/validate/test only (apply runs in HCP Terraform)
 "github:axnic/rtunk" = "latest" # rtunk CLI (code quality platform, Trunk-compatible)
 
@@ -88,7 +89,7 @@ alias = "lf"
 run = "rtunk check --fix ."
 
 # -----------------------------------------------------------------------------
-# commitlint — validates commit messages against the conventional commit rules
+# commitlint — validates commit messages against the gitsym format
 # defined in .commitlintrc.js. The commit-msg git hook (via rtunk actions) runs
 # this automatically on commit.
 #
@@ -97,7 +98,7 @@ run = "rtunk check --fix ."
 # -----------------------------------------------------------------------------
 
 [tasks."lint:commitlint"]
-description = "Validate the last commit message against conventional commit rules"
+description = "Validate the last commit message against the gitsym format"
 alias = "lc"
 run = "commitlint --from HEAD~1 --to HEAD --verbose"
 
