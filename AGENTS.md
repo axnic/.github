@@ -73,11 +73,14 @@ Docs are flat: link pages with `[title](page.md)` and never use sub-directories.
 
 ## Commit / PR Instructions
 
-Commit format follows **Conventional Commits with a mandatory scope**:
+Commit format follows **[gitsym](https://github.com/axnic/gitsym) with a mandatory scope**:
 
 ```text
-type(scope): Subject
+type[scope]: Subject
 ```
+
+The type is one symbol (`+` add, `~` improve, `!` fix, `=` refactor/CI, `^` bump, `@` docs, ...); the full
+list is in the gitsym specification.
 
 The scope is **required** and must be one of: `workflows`, `terraform`, `profile`, `docs`, `skills`, `deps`, `tooling`, `templates`.
 The subject uses sentence case. The `commit-msg` git hook enforces this automatically

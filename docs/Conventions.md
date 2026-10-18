@@ -90,11 +90,11 @@ Third-party actions are the opposite: always pinned by SHA.
 Each repository has its own convention, enforced by its `.commitlintrc.js`. Do not assume the one of
 another repository.
 
-- `axnic/.github` (and `axnic/.github-private`): Conventional Commits with a **mandatory scope**,
-  `type(scope): Subject` in sentence case, DCO sign-off and signed commits. Scopes of `axnic/.github`:
+- `axnic/.github` (and `axnic/.github-private`): gitsym with a **mandatory scope**,
+  `type[scope]: Subject` in sentence case, DCO sign-off and signed commits. Scopes of `axnic/.github`:
   `workflows`, `terraform`, `profile`, `docs`, `skills`, `deps`, `tooling`, `templates`.
-- `rtunk` uses its own symbol convention (`type[scope]:`), which is why its `renovate.json` overrides the
-  commit prefix (`^[deps]:`, see [Renovate](Renovate.md)).
+- Repositories on gitsym (`type[scope]:`, like `rtunk` and this one) override the Renovate commit prefix in their
+  `renovate.json` (`^[deps]:`, see [Renovate](Renovate.md)): the organisation preset is Conventional Commits.
 - Terraform's `commit_format` setting (`gitsym` by default, `cc`, `gitmoji`) tells the tooling which one a repository
   uses: [Commit-Formats](Commit-Formats.md). [e2e.sync](e2e.sync.md) and the Terraform `commit_message` variable must
   produce messages that pass the commitlint of the target repository.
