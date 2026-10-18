@@ -16,46 +16,29 @@
 
 <br/><br/>
 
-%{ if length(pi_extensions) > 0 ~}
-## π｜Pi-agent Extensions
+%{ for s in sections ~}
+%{ if length(s.projects) > 0 ~}
+## ${s.title}
 
-Standalone modules that extend pi-agent's capabilities — each ships as an independent, installable package.
+${s.intro}
 
-%{ for p in pi_extensions ~}
-- [${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }\
-    ${join(" ", slice(p.badges, 0, ceil(length(p.badges) / 2)))}\
-    ${join(" ", slice(p.badges, ceil(length(p.badges) / 2), length(p.badges)))}
+<table>
+%{ for row in chunklist(s.projects, 2) ~}
+<tr>
+%{ for p in row ~}
+<td valign="top" width="50%">
 
+[${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }
+
+${join(" ", p.badges)}
+
+</td>
 %{ endfor ~}
+</tr>
+%{ endfor ~}
+</table>
 
 %{ endif ~}
-
-%{ if length(pulumi) > 0 ~}
-## Pulumi Providers
-
-Pulumi providers for self-hosted services.
-
-%{ for p in pulumi ~}
-- [${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }\
-    ${join(" ", slice(p.badges, 0, ceil(length(p.badges) / 2)))}\
-    ${join(" ", slice(p.badges, ceil(length(p.badges) / 2), length(p.badges)))}
-
 %{ endfor ~}
-
-%{ endif ~}
-
-%{ if length(others) > 0 ~}
-## Other Projects
-
-Everything else.
-
-%{ for p in others ~}
-- [${p.archived ? "~~${p.name}~~" : "**${p.name}**"}](${p.url})%{ if p.description != "" } — ${p.archived ? "~~${p.description}~~" : p.description}%{ endif }\
-    ${join(" ", slice(p.badges, 0, ceil(length(p.badges) / 2)))}\
-    ${join(" ", slice(p.badges, ceil(length(p.badges) / 2), length(p.badges)))}
-
-%{ endfor ~}
-
-%{ endif ~}
 
 <div align="center"><sub><sub>Generated ${generated_at}</sub></sub></div>
