@@ -43,7 +43,7 @@ resource "github_repository_file" "public_readme" {
   branch              = "main"
   file                = "README.md"
   content             = module.org_readme.rendered_public
-  commit_message      = "chore(docs): Update public organisation profile README"
+  commit_message      = "@[profile]: Update public organisation profile README"
   overwrite_on_create = true
 }
 
@@ -91,6 +91,6 @@ resource "github_repository_file" "private_readme" {
   file       = "README.md"
   content    = module.org_readme.rendered_private
 
-  commit_message      = "chore(docs): Update private organisation profile README"
+  commit_message      = "@[profile]: Update private organisation profile README"
   overwrite_on_create = true
 }
