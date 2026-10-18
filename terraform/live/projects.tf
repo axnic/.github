@@ -228,17 +228,21 @@ module "n8n_nodes_paperless" {
 
   # Commit format: gitsym (the default), enforced by the repository's commitlint.
 
-  # Central CI callers: core (eslint through ci:lint, rtunk, commitlint, CodeQL), security and e2e
-  # (the node against Paperless-ngx 2.20 to 3.3: the callers per version are managed by e2e.sync).
-  # No release group yet: the package is still named @n8n-chezmoi-sh/..., and npm trusted
-  # publishing has to be set up first (see release:npm).
+  # Central CI callers: core (eslint through ci:lint, rtunk, commitlint, CodeQL), security, e2e
+  # (the node against Paperless-ngx 2.20 to 3.3: the callers per version are managed by e2e.sync)
+  # and the npm release (`mise run ci` + `ci:build`, then a staged `npm stage publish`).
   # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
   terraform_app_id = var.github_app_id
-  workflow_groups  = ["core", "security", "e2e"]
+  workflow_groups  = ["core", "security", "e2e", "release:npm"]
   # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
   workflow_params = {
     scan_languages = ["javascript-typescript"]
+    # The release commits the version to package.json; `release` is not one of the scopes of the repository.
+    npm_commit_message = "=[repo]: Bump the package version to %s"
   }
   # 1 USD/month: TODO(owner) confirm
   pr_agent = { monthly_budget_usd = 1 }
+
+  # axnic-bot commits the released version (release:npm); secrets: see ci_app.tf.
+  ruleset_bypass_actors = local.ci_bypass_actors
 }
