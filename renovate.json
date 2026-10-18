@@ -7,6 +7,8 @@
   "extends": ["local>axnic/.github:default"],
   "enabledManagers": ["github-actions", "npm", "mise", "terraform"],
   "dependencyDashboard": false,
+  "semanticCommits": "disabled",
+  "commitMessagePrefix": "^[deps]:",
   "packageRules": [
     {
       "description": "Terraform providers and modules: minor and patch from 1.0 on, grouped (one pull request updates versions.tf and every lock file).",
