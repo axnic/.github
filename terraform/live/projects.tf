@@ -35,6 +35,7 @@ locals {
     merge(module.medieval_claude.project_info, { type = "other" }),
     merge(module.argocd_extension_application_map.project_info, { type = "other" }),
     merge(module.gitsym.project_info, { type = "other" }),
+    merge(module.n8n_nodes_paperless.project_info, { type = "n8n_extension" }),
   ]
 }
 
@@ -212,4 +213,32 @@ module "gitsym" {
     actor_type  = "OrganizationAdmin"
     bypass_mode = "always"
   }], local.ci_bypass_actors)
+}
+
+# ---------------------------------------------------------------------------
+# n8n-nodes-paperless — n8n community node for Paperless-ngx (TypeScript), adopted via imports.tf.
+# ---------------------------------------------------------------------------
+module "n8n_nodes_paperless" {
+  source    = "../modules/repository/base"
+  providers = { github = github, toml = toml }
+
+  name        = "n8n-nodes-paperless"
+  description = "n8n community node to manage your documents with Paperless-ngx."
+  features    = ["issues"]
+
+  # Gitmoji (`:code:(scope): Subject`), enforced by the repository's commitlint.
+  commit_format = "gitmoji"
+
+  # Central CI callers: core (eslint through ci:lint, rtunk, commitlint, CodeQL) and security.
+  # No release group yet: the package is still named @n8n-chezmoi-sh/..., and npm trusted
+  # publishing has to be set up first (see release:npm).
+  # TODO(owner): set required_status_checks after the first PR run (see AGENTS.md).
+  terraform_app_id = var.github_app_id
+  workflow_groups  = ["core", "security"]
+  # No Go here (core.scan analyzes Go by default and CodeQL fails without Go code).
+  workflow_params = {
+    scan_languages = ["javascript-typescript"]
+  }
+  # 1 USD/month: TODO(owner) confirm
+  pr_agent = { monthly_budget_usd = 1 }
 }

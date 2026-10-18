@@ -68,3 +68,16 @@ import {
   to = module.argocd_extension_application_map.github_repository_dependabot_security_updates.this
   id = "argocd-extension-application-map"
 }
+
+import {
+  to = module.n8n_nodes_paperless.github_repository.this
+  id = "n8n-nodes-paperless"
+}
+import {
+  to = module.n8n_nodes_paperless.github_branch_default.this
+  id = "n8n-nodes-paperless"
+}
+import {
+  to = module.n8n_nodes_paperless.github_repository_dependabot_security_updates.this
+  id = "n8n-nodes-paperless"
+}
